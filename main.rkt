@@ -104,7 +104,8 @@
        "")
    "\n"))
 
-
+;; Usage example. To see the output, run:
+;; racket -l text-table
 (module+ main
 
   (define table
@@ -113,8 +114,20 @@
       (111 22 3333 44 5 6 7 8888)))
 
   (define aligns
-    #;'right ; same alignment for all colums
     '(left center center center center center center right)) ; one alignment per column
+
+  (for* ([align (in-list (list 'left 'center 'right aligns))])
+    (newline)
+    (newline)
+    ; Print values
+    (displayln
+     (table->string
+      (list (list '#:align align))))
+    ; Example
+    (displayln
+     (table->string
+      table
+      #:align align)))
   
   (for* ([border-style (in-list (dict-keys table-borders-dict))]
          [framed? (in-list '(#t #f))]
@@ -124,9 +137,9 @@
     ; Print values
     (displayln
      (table->string
-      (list (list 'border-style border-style)
-            (list 'framed? framed?)
-            (list 'row-sep? row-sep?))))
+      (list (list '#:border-style border-style)
+            (list '#:framed? framed?)
+            (list '#:row-sep? row-sep?))))
     ; Example
     (displayln
      (table->string
