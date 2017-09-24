@@ -3,6 +3,6 @@
 (define deps '("base"))
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 (define scribblings '(("scribblings/text-table.scrbl" ())))
-(define pkg-desc "Description Here")
+(define pkg-desc "A simple package to print tables in utf-8/ascii format")
 (define version "0.0")
-(define pkg-authors '(orseau))
+(define pkg-authors '(laurent.orseau@gmail.com))
