@@ -10,7 +10,7 @@ raco pkg install text-table
 See the example in the main submodule of the `main.rkt` file.
 You can observe the results by running:
 ```
-racket -l text-table/main
+racket -l text-table
 ```
 
 Two examples:
