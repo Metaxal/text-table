@@ -32,29 +32,44 @@
     (for/fold ([x a] ...) (y ...)
       body ...)))
 
+(define (transpose xs) (apply map list xs))
+
 (define (table->string ll
                        #:->string [->string ~a]
                        #:border-style [border-style 'single]
                        #:framed? [framed? #t]
                        #:row-sep? [row-sep? #t]
                        #:align [align 'left]) ; like for ~a
-  (let* ([lens (map length ll)]
-         [len1 (first lens)])
-    (unless (andmap (λ(len)(= len len1)) (rest lens))
-      (error "All rows must have the same length")))
+  (define lens (map length ll))
+  (define the-len (first lens))
+  (unless (andmap (λ (len) (= len the-len)) (rest lens))
+    (error "All rows must have the same length"))
   
-  (define/for/fold ([cell-sizes (make-list (length (first ll)) 0)]
+  (define/for/fold ([cell-sizes (make-list the-len 0)]
                     [ll-str '()])
                    ([row (in-list ll)])
     (define/for/fold ([new-cell-sizes '()]
+                      [subrow-size 0]
                       [row-str '()])
                      ([cell (in-list row)]
                       [size (in-list cell-sizes)])
-      (define str (->string cell))
-      (values (cons (max (string-length str) size) new-cell-sizes)
-              (cons str row-str)))
-    (values (reverse new-cell-sizes)
-            (cons (reverse row-str) ll-str)))
+      (define as-str (->string cell))
+      (define str-splitted (string-split (if (non-empty-string? as-str)
+                                             as-str
+                                             " ")
+                                         "\n"))
+      (values
+       (cons (apply max size (map string-length str-splitted)) new-cell-sizes)
+       (max subrow-size (length str-splitted))
+       (cons str-splitted row-str)))
+
+    (values
+     (reverse new-cell-sizes)
+     (cons (transpose
+            (for/list ([col-group (in-list (reverse row-str))])
+              (append col-group
+                      (make-list (- subrow-size (length col-group)) ""))))
+           ll-str)))
 
   (when (and (list? align)
              (not (= (length align) (length cell-sizes))))
@@ -76,19 +91,20 @@
     (if (symbol? align)
         (make-list (length cell-sizes) align)
         align))
+
   (define rows-str
-    (map (λ(row-str)
-           (string-join (map (λ(str size al)
-                               (~a str
-                                   #:min-width size
-                                   #:align al))
-                             row-str
-                             cell-sizes
-                             align-list)
+    (for/list ([row-strs (in-list (reverse ll-str))])
+      (string-join
+       (for/list ([row-str (in-list row-strs)])
+         (string-join
+          (for/list ([str (in-list row-str)]
+                     [size (in-list cell-sizes)]
+                     [al (in-list align-list)])
+            (~a str #:min-width size #:align al))
                         (second col-seps)
                         #:before-first (if framed? (first col-seps) "")
                         #:after-last (if framed? (third col-seps) "")))
-         (reverse ll-str)))
+       "\n")))
 
   (string-join
    (if row-sep?
@@ -147,4 +163,14 @@
       #:align aligns
       #:border-style border-style
       #:row-sep? row-sep?
-      #:framed? framed?))))
+      #:framed? framed?)))
+
+  (newline)
+  (newline)
+  (displayln "Multiline")
+  (newline)
+  (displayln
+   (table->string
+    `(["hello\nworld" "1\n2\n3" "3" ""]
+      ["" "" "" ""]
+      ["a\nbb\nccc\ndddd" "1" "22\n22" ""]))))
