@@ -66,7 +66,7 @@ a  ║ b ║ c  ║d ║e║    f     ║gggg║   h
           [table (listof list?)]
           [#:->string to-string procedure? ~a]
           [#:border-style border-style
-           (or/c 'single 'space 'space-single 'rounded 'double)
+           (or/c 'single 'space 'space-single 'rounded 'double 'latex)
            'single]
           [#:framed? framed? boolean? #t]
           [#:row-sep? row-sep? boolean? #t]
@@ -95,3 +95,8 @@ a  ║ b ║ c  ║d ║e║    f     ║gggg║   h
  applies to all cells, or a list of symbols of the same length as the
  rows can be applied in order to specify the alignment of each column
  independently.}
+
+@defform[(print-table args ...)]{
+Shorthand form for @racket[(displayln (table->string args ...))].
+Takes the same arguments as @racket[table->string].
+}

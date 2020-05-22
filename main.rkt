@@ -10,12 +10,13 @@
   (table->string
    (->* ((listof list?))
         (#:->string (any/c . -> . string?)
-         #:border-style (apply or/c (dict-keys table-borders-dict))
+         #:border-style (apply or/c border-styles)
          #:framed? boolean?
          #:row-sep? boolean?
          #:align (or/c (listof (or/c 'left 'center 'right))
                        (or/c 'left 'center 'right)))
-        string?))))
+        string?)))
+ print-table)
 
 ;; See
 ;; https://en.wikipedia.org/wiki/Box-drawing_character
@@ -27,12 +28,30 @@
     (rounded       . (#\─      ("│" "│" "│") ("╭" "┬" "╮") ("├" "┼" "┤") ("╰" "┴" "╯")))
     (double        . (#\═      ("║" "║" "║") ("╔" "╦" "╗") ("╠" "╬" "╣") ("╚" "╩" "╝")))))
 
+(define border-styles
+  (cons 'latex (dict-keys table-borders-dict)))
+
+(define (make-latex-border-style align)
+  (define (align-ref al)
+    (case al [(left) "l"] [(right) "r"] [(center) "c"]))
+  (define als (string-append
+               (string-append* "\\begin{tabular}{"
+                               (map align-ref align))
+               "}"))
+  `(#\space  ("" " & " " \\\\")
+             (,als "" "")
+             ("\\hline" "" "")
+             ("\\end{tabular}" "" "")))
+
 (define-syntax-rule (define/for/fold ([x a] ...) (y ...) body ...)
   (define-values (x ...)
     (for/fold ([x a] ...) (y ...)
       body ...)))
 
 (define (transpose xs) (apply map list xs))
+
+(define-syntax-rule (print-table args ...)
+  (displayln (table->string args ...)))
 
 (define (table->string ll
                        #:->string [->string ~a]
@@ -75,7 +94,15 @@
              (not (= (length align) (length cell-sizes))))
     (error "align does not have the same number of elements of the number of columns in the table"))
 
-  (define style (dict-ref table-borders-dict border-style))
+  (define align-list
+    (if (symbol? align)
+        (make-list (length cell-sizes) align)
+        align))
+
+  (define style
+    (case border-style
+      [(latex) (make-latex-border-style align-list)]
+      [else (dict-ref table-borders-dict border-style)]))
   (define-values (row-sep col-seps first-row-corners mid-row-corners last-row-corners)
     (apply values style))
 
@@ -86,11 +113,6 @@
      (second row-corners)
      #:before-first (if framed? (first row-corners) "")
      #:after-last (if framed? (third row-corners) "")))
-
-  (define align-list
-    (if (symbol? align)
-        (make-list (length cell-sizes) align)
-        align))
 
   (define rows-str
     (for/list ([row-strs (in-list (reverse ll-str))])
@@ -145,7 +167,7 @@
       table
       #:align align)))
   
-  (for* ([border-style (in-list (dict-keys table-borders-dict))]
+  (for* ([border-style (in-list border-styles)]
          [framed? (in-list '(#t #f))]
          [row-sep? (in-list '(#t #f))])
     (newline)
