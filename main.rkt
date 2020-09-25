@@ -90,9 +90,13 @@
                       (make-list (- subrow-size (length col-group)) ""))))
            ll-str)))
 
-  (when (and (list? align)
-             (not (= (length align) (length cell-sizes))))
-    (error "align does not have the same number of elements of the number of columns in the table"))
+  ;; Adjust align to the cells
+  (when (list? align)
+    (define nal (length align))
+    (define nc (length cell-sizes))
+    (cond [(= nal 0) (error "align cannot be an empty list")]
+          [(< nc nal) (set! align (take align nc))] ; trim
+          [(> nc nal) (set! align (append align (make-list (- nc nal) (last align))))])) ; extend
 
   (define align-list
     (if (symbol? align)

@@ -1,9 +1,12 @@
 #lang scribble/manual
 @require[@for-label[text-table
-                    racket/base]]
+                    #;racket/base]]
 
 @title{text-table}
 @author{orseau}
+
+@(define-syntax-rule (racket arg)
+   (racketmodname arg #:indirect))
 
 @defmodule[text-table]{
  A simple package to display utf-8 textual tables.}
@@ -94,7 +97,10 @@ a  ║ b ║ c  ║d ║e║    f     ║gggg║   h
  cells are to be aligned within their cells. A single-symbol specification
  applies to all cells, or a list of symbols of the same length as the
  rows can be applied in order to specify the alignment of each column
- independently.}
+ independently. When @racket[align] is a list, it is trimmed to the length
+ of the columns if it is too long, or the last element of the list is used
+ for the remaining columns if it is too short.
+}
 
 @defform[(print-table args ...)]{
 Shorthand form for @racket[(displayln (table->string args ...))].
