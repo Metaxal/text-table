@@ -15,7 +15,16 @@
          #:row-sep? boolean?
          #:align (or/c (listof (or/c 'left 'center 'right))
                        (or/c 'left 'center 'right)))
-        string?)))
+        string?))
+  (print-simple-table
+   (->* ((listof list?))
+        (#:->string (any/c . -> . string?)
+         #:border-style (apply or/c border-styles)
+         #:framed? boolean?
+         #:row-sep? boolean?
+         #:align (or/c (listof (or/c 'left 'center 'right))
+                       (or/c 'left 'center 'right)))
+        void?)))
  print-table)
 
 ;; See
@@ -52,6 +61,20 @@
 
 (define-syntax-rule (print-table args ...)
   (displayln (table->string args ...)))
+
+(define (print-simple-table ll
+                            #:->string [->string ~a]
+                            #:border-style [border-style 'space]
+                            #:framed? [framed? #f]
+                            #:row-sep? [row-sep? #f]
+                            #:align [align 'left]) ; like for ~a
+  (displayln
+   (table->string ll
+                  #:->string ->string
+                  #:border-style border-style
+                  #:framed? framed?
+                  #:row-sep? row-sep?
+                  #:align align)))
 
 (define (table->string ll
                        #:->string [->string ~a]

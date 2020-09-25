@@ -1,12 +1,20 @@
 #lang scribble/manual
-@require[@for-label[text-table
-                    #;racket/base]]
+@(require racket/sandbox
+          scribble/example
+          (for-label text-table
+                     #;racket/base))
 
 @title{text-table}
 @author{orseau}
 
 @(define-syntax-rule (racket arg)
    (racketmodname arg #:indirect))
+
+@(define my-eval
+    (parameterize ([sandbox-output 'string]
+                  [sandbox-error-output 'string]
+                  [sandbox-memory-limit 50])
+      (make-evaluator 'racket/base '(require text-table))))
 
 @defmodule[text-table]{
  A simple package to display utf-8 textual tables.}
@@ -18,16 +26,10 @@ To install:
 See the example in the main submodule of the @filepath{main.rkt} file.
 You can observe the results by running:
 
-
 @verbatim{racket -l text-table}
 
-
-Two examples:
-
-@codeblock|{
-#lang racket
-(require text-table)
-
+@examples[
+ #:eval my-eval
 ;; Minimalistic example:
 (displayln
  (table->string
@@ -45,25 +47,7 @@ Two examples:
   #:framed? #f
   #:row-sep? #t
   #:align '(left center center center center center center right)))
-}|
-
-This outputs:
-
-@verbatim{
-┌───┬───┬────┬──┬─┬──────────┬────┬────┐
-│a  │b  │c   │d │e│f         │gggg│h   │
-├───┼───┼────┼──┼─┼──────────┼────┼────┤
-│123│456│77  │54│1│5646547987│41  │1   │
-├───┼───┼────┼──┼─┼──────────┼────┼────┤
-│111│22 │3333│44│5│6         │7   │8888│
-└───┴───┴────┴──┴─┴──────────┴────┴────┘
-a  ║ b ║ c  ║d ║e║    f     ║gggg║   h
-═══╬═══╬════╬══╬═╬══════════╬════╬════
-123║456║ 77 ║54║1║5646547987║ 41 ║   1
-═══╬═══╬════╬══╬═╬══════════╬════╬════
-111║22 ║3333║44║5║    6     ║ 7  ║8888
-}
-
+ ]
 
 @defproc[(table->string
           [table (listof list?)]
@@ -101,6 +85,28 @@ a  ║ b ║ c  ║d ║e║    f     ║gggg║   h
  of the columns if it is too long, or the last element of the list is used
  for the remaining columns if it is too short.
 }
+
+@defproc[(print-simple-table
+          [table (listof list?)]
+          [#:->string to-string procedure? ~a]
+          [#:border-style border-style
+           (or/c 'single 'space 'space-single 'rounded 'double 'latex)
+           'space]
+          [#:framed? framed? boolean? #f]
+          [#:row-sep? row-sep? boolean? #f]
+          [#:align align
+           (or/c (listof (or/c 'left 'center 'right))
+                 (or/c 'left 'center 'right))
+           'left])
+         string?]{
+  Like @racket[table->string], but prints the table instead of returning it
+  and uses default arguments for a minimalistic table.
+}
+@examples[#:eval my-eval
+          (print-simple-table
+           #:align '(left right)
+           '((1 2 3 4444)
+             (aaa bbb ccc d)))]
 
 @defform[(print-table args ...)]{
 Shorthand form for @racket[(displayln (table->string args ...))].
