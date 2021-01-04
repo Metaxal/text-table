@@ -2,19 +2,17 @@
 @(require racket/sandbox
           scribble/example
           (for-label text-table
-                     #;racket/base))
+                     racket/base
+                     racket/format))
 
 @title{text-table}
-@author{orseau}
-
-@(define-syntax-rule (racket arg)
-   (racketmodname arg #:indirect))
+@author{Laurent Orseau}
 
 @(define my-eval
-    (parameterize ([sandbox-output 'string]
+   (parameterize ([sandbox-output 'string]
                   [sandbox-error-output 'string]
                   [sandbox-memory-limit 50])
-      (make-evaluator 'racket/base '(require text-table))))
+     (make-evaluator 'racket/base '(require text-table))))
 
 @defmodule[text-table]{
  A simple package to display utf-8 textual tables.}
