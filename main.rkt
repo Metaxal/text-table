@@ -16,7 +16,7 @@
          #:align (or/c (listof (or/c 'left 'center 'right))
                        (or/c 'left 'center 'right)))
         string?))
-  (print-simple-table
+  (simple-table->string
    (->* ((listof list?))
         (#:->string (any/c . -> . string?)
          #:border-style (apply or/c border-styles)
@@ -24,8 +24,9 @@
          #:row-sep? boolean?
          #:align (or/c (listof (or/c 'left 'center 'right))
                        (or/c 'left 'center 'right)))
-        void?)))
- print-table)
+        string?)))
+ print-table
+ print-simple-table)
 
 ;; See
 ;; https://en.wikipedia.org/wiki/Box-drawing_character
@@ -62,19 +63,21 @@
 (define-syntax-rule (print-table args ...)
   (displayln (table->string args ...)))
 
-(define (print-simple-table ll
-                            #:->string [->string ~a]
-                            #:border-style [border-style 'space]
-                            #:framed? [framed? #f]
-                            #:row-sep? [row-sep? #f]
-                            #:align [align 'left]) ; like for ~a
-  (displayln
-   (table->string ll
-                  #:->string ->string
-                  #:border-style border-style
-                  #:framed? framed?
-                  #:row-sep? row-sep?
-                  #:align align)))
+(define-syntax-rule (print-simple-table args ...)
+  (displayln (simple-table->string args ...)))
+
+(define (simple-table->string ll
+                              #:->string [->string ~a]
+                              #:border-style [border-style 'space]
+                              #:framed? [framed? #f]
+                              #:row-sep? [row-sep? #f]
+                              #:align [align 'left]) ; like for ~a
+  (table->string ll
+                 #:->string ->string
+                 #:border-style border-style
+                 #:framed? framed?
+                 #:row-sep? row-sep?
+                 #:align align))
 
 (define (table->string ll
                        #:->string [->string ~a]

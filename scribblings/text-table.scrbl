@@ -84,7 +84,7 @@ You can observe the results by running:
  for the remaining columns if it is too short.
 }
 
-@defproc[(print-simple-table
+@defproc[(simple-table->string
           [table (listof list?)]
           [#:->string to-string procedure? ~a]
           [#:border-style border-style
@@ -101,12 +101,19 @@ You can observe the results by running:
   and uses default arguments for a minimalistic table.
 }
 @examples[#:eval my-eval
-          (print-simple-table
-           #:align '(left right)
-           '((1 2 3 4444)
-             (aaa bbb ccc d)))]
+          (displayln
+           (simple-table->string
+            #:align '(left right)
+            '((a b c d e f gggg h)
+              (123 456 77 54 1  5646547987 41 1)
+              (111 22 3333 44 5 6 7 8888))))]
 
 @defform[(print-table args ...)]{
 Shorthand form for @racket[(displayln (table->string args ...))].
 Takes the same arguments as @racket[table->string].
+}
+
+@defform[(print-simple-table args ...)]{
+Shorthand form for @racket[(displayln (simple-table->string args ...))].
+Takes the same arguments as @racket[simple-table->string].
 }
