@@ -82,6 +82,10 @@
                        #:framed? [framed? #t]
                        #:row-sep? [row-sep? #t]
                        #:align [align 'left]) ; like for ~a
+  (when (empty? ll)
+    (raise-argument-error 'table->string
+                          "nonempty list"
+                          0 ll))
   (define lens (map length ll))
   (define the-len (first lens))
   (unless (andmap (λ (len) (= len the-len)) (rest lens))
