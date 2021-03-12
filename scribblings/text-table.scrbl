@@ -2,6 +2,7 @@
 @(require racket/sandbox
           scribble/example
           (for-label text-table
+                     racket/contract
                      racket/base
                      racket/format))
 
