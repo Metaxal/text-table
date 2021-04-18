@@ -29,31 +29,40 @@ You can observe the results by running:
 
 @examples[
  #:eval my-eval
-;; Minimalistic example:
-(displayln
- (table->string
+(code:comment "Minimalistic example:")
+ (print-table
   '((a b c d e f gggg h)
     (123 456 77 54 1  5646547987 41 1)
-    (111 22 3333 44 5 6 7 8888))))
+    (111 22 3333 44 5 6 7 8888)))
 
-;; With more bells and whistles
-(displayln
- (table->string
+ (code:comment "With more bells and whistles")
+ (print-table
   '((a b c d e f gggg h)
     (123 456 77 54 1  5646547987 41 1)
     (111 22 3333 44 5 6 7 8888))
   #:border-style 'double
   #:framed? #f
   #:row-sep? #t
-  #:align '(left center center center center center center right)))
+  #:align '(left center center center center center center right))
+
+ (code:comment "Custom border style")
+ (print-table '((abc abc abc)
+                (abcdef ab abcdef)
+                (a abcdef abc))
+              #:border-style
+              '(#\x (code:comment "row sep")
+                ("A" "B" "C") (code:comment "col seps")
+                ("D" "E" "F") (code:comment "first-row corners")
+                ("G" "H" "I") (code:comment "mid-row corners")
+                ("J" "K" "L")) (code:comment "last-row corners")
+              #:framed? #t
+              #:row-sep? #t)
  ]
 
 @defproc[(table->string
           [table (listof list?)]
           [#:->string to-string procedure? ~a]
-          [#:border-style border-style
-           (or/c 'single 'space 'space-single 'rounded 'double 'latex)
-           'single]
+          [#:border-style border-style/c 'single]
           [#:framed? framed? boolean? #t]
           [#:row-sep? row-sep? boolean? #t]
           [#:align align
@@ -88,9 +97,7 @@ You can observe the results by running:
 @defproc[(simple-table->string
           [table (listof list?)]
           [#:->string to-string procedure? ~a]
-          [#:border-style border-style
-           (or/c 'single 'space 'space-single 'rounded 'double 'latex)
-           'space]
+          [#:border-style border-style/c 'space]
           [#:framed? framed? boolean? #f]
           [#:row-sep? row-sep? boolean? #f]
           [#:align align
@@ -117,4 +124,20 @@ Takes the same arguments as @racket[table->string].
 @defform[(print-simple-table args ...)]{
 Shorthand form for @racket[(displayln (simple-table->string args ...))].
 Takes the same arguments as @racket[simple-table->string].
+}
+
+@defthing[border-style/c contract?
+          #:value
+          (or/c
+           latex space space-single single rounded double
+           (list/c char? (code:comment "row sep")
+              '(#\x 
+                   (list/c string? string? string?) (code:comment "col seps")
+                   (list/c string? string? string?) (code:comment "first-row corners")
+                   (list/c string? string? string?) (code:comment "mid-row corners")
+                   (list/c string? string? string?))) (code:comment "last-row corners")
+           )]{
+Border style contract.
+The list element is for custom border styles.
+See the example at the top of this document.
 }

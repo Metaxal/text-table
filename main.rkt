@@ -6,11 +6,12 @@
          racket/contract)
 
 (provide
+ border-style/c
  (contract-out
   (table->string
    (->* ((listof list?))
         (#:->string (any/c . -> . string?)
-         #:border-style (apply or/c border-styles)
+         #:border-style border-style/c
          #:framed? boolean?
          #:row-sep? boolean?
          #:align (or/c (listof (or/c 'left 'center 'right))
@@ -19,7 +20,7 @@
   (simple-table->string
    (->* ((listof list?))
         (#:->string (any/c . -> . string?)
-         #:border-style (apply or/c border-styles)
+         #:border-style border-style/c
          #:framed? boolean?
          #:row-sep? boolean?
          #:align (or/c (listof (or/c 'left 'center 'right))
@@ -40,6 +41,17 @@
 
 (define border-styles
   (cons 'latex (dict-keys table-borders-dict)))
+
+(define border-style/c
+  (apply or/c
+         ; custom style
+         (list/c char?
+                 (list/c string? string? string?)
+                 (list/c string? string? string?)
+                 (list/c string? string? string?)
+                 (list/c string? string? string?))
+         ; default styles
+         border-styles))
 
 (define (make-latex-border-style align)
   (define (align-ref al)
@@ -134,9 +146,11 @@
         align))
 
   (define style
-    (case border-style
-      [(latex) (make-latex-border-style align-list)]
-      [else (dict-ref table-borders-dict border-style)]))
+    (if (list? border-style)
+      border-style
+      (case border-style
+        [(latex) (make-latex-border-style align-list)]
+        [else (dict-ref table-borders-dict border-style)])))
   (define-values (row-sep col-seps first-row-corners mid-row-corners last-row-corners)
     (apply values style))
 
