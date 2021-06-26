@@ -62,7 +62,7 @@ You can observe the results by running:
 @defproc[(table->string
           [table (listof list?)]
           [#:->string to-string procedure? ~a]
-          [#:border-style border-style/c 'single]
+          [#:border-style border-style border-style/c 'single]
           [#:framed? framed? boolean? #t]
           [#:row-sep? row-sep? boolean? #t]
           [#:align align
