@@ -98,9 +98,9 @@
                        #:framed? [framed? #t]
                        #:row-sep? [row-sep? #t]
                        #:align [align 'left]) ; like for ~a
-  (when (empty? ll)
+  (unless (and (list? ll) (not (empty? ll)) (andmap list? ll))
     (raise-argument-error 'table->string
-                          "nonempty list"
+                          "nonempty list of lists of the same lengths"
                           0 ll))
   (define lens (map length ll))
   (define the-len (first lens))
@@ -190,6 +190,14 @@
        (string-append "\n" (make-row-line last-row-corners))
        "")
    "\n"))
+
+(module+ test
+  (require rackunit)
+  (check-exn exn:fail? (λ () (table->string '())))
+  (check-exn exn:fail? (λ () (table->string '(a))))
+  (check-exn exn:fail? (λ () (table->string '([a b] [c]))))
+  (check-not-exn (λ () (table->string '([a b] [c d]))))
+  )
 
 ;; Usage example. To see the output, run:
 ;; racket -l text-table
