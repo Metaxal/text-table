@@ -3,6 +3,7 @@
          racket/list
          racket/dict
          racket/string
+         racket/match
          racket/contract)
 
 (provide
@@ -29,10 +30,57 @@
  print-table
  print-simple-table)
 
+;; "Window" style frames.
+;; Easier to specify, and more flexible since col seps may be different for top, middle and bottom.
+(define table-frames
+  '((space
+     "    "
+     "    "
+     "    "
+     "    ")
+    (single
+     "┌─┬┐"
+     "│ ││"
+     "├─┼┤"
+     "└─┴┘")
+    (space-single
+     "┌──┐"
+     "│  │"
+     "├──┤"
+     "└──┘")
+    (rounded
+     "╭─┬╮"
+     "│ ││"
+     "├─┼┤"
+     "╰─┴╯")
+    (double
+     "╔═╦╗"
+     "║ ║║"
+     "╠═╬╣"
+     "╚═╩╝")
+    (heavy
+     "┏━┳┓"
+     "┃ ┃┃"
+     "┣━╋┫"
+     "┗━┻┛")))
+
+(define table-frame/c
+  (list/c (string-len/c 5)
+          (string-len/c 5)
+          (string-len/c 5)
+          (string-len/c 5)))
+
+(define (frame->border2 frame)
+  (map (λ (s) (map string (string->list s))) frame))
+
 ;; See
 ;; https://en.wikipedia.org/wiki/Box-drawing_character
 ;; http://www.utf8-chartable.de/unicode-utf8-table.pl?start=9472&unicodeinhtml=dec
-(define table-borders-dict
+;; old border styles
+(define table-borders
+  (for/list ([(name frame) (in-dict table-frames)])
+    (cons name (frame->border2 frame)))
+  #;
   '((space         . (#\space  (" " " " " ") (" " " " " ") (" " " " " ") (" " " " " ")))
     (space-single  . (#\─      ("│" " " "│") ("┌" "─" "┐") ("├" "─" "┤") ("└" "─" "┘")))
     (single        . (#\─      ("│" "│" "│") ("┌" "┬" "┐") ("├" "┼" "┤") ("└" "┴" "┘")))
@@ -40,17 +88,40 @@
     (double        . (#\═      ("║" "║" "║") ("╔" "╦" "╗") ("╠" "╬" "╣") ("╚" "╩" "╝")))
     (heavy         . (#\━      ("┃" "┃" "┃") ("┏" "┳" "┓") ("┣" "╋" "┫") ("┗" "┻" "┛")))))
 
+(define table-border1/c
+  (list/c char?
+          (list/c string? string? string?)
+          (list/c string? string? string?)
+          (list/c string? string? string?)
+          (list/c string? string? string?)))
+
+(define table-border2/c
+  (list/c (list/c string? string? string? string?)
+          (list/c string? string? string? string?)
+          (list/c string? string? string? string?)
+          (list/c string? string? string? string?)))
+
+(define (border1->border2 border)
+  (match border
+    [(list sep-char (list rowl rowm rowr) (list tl tm tr) (list ml mm mr) (list bl bm br))
+     (define sep (string sep-char))
+     ; default pad-char is " "
+     (list (list tl sep tm tr)
+           (list rowl " " rowm rowr)
+           (list ml sep mm mr)
+           (list bl sep bm br))]))
+
 (define border-styles
-  (cons 'latex (dict-keys table-borders-dict)))
+  (cons 'latex (dict-keys table-frames #;table-borders-dict)))
 
 (define border-style/c
   (apply or/c
-         ; custom style
-         (list/c char?
-                 (list/c string? string? string?)
-                 (list/c string? string? string?)
-                 (list/c string? string? string?)
-                 (list/c string? string? string?))
+         ; custom (old) style, kept for backward compatibility
+         table-border1/c
+         ; new style, with one row separator per row type
+         table-border2/c
+         ; custom "window" style
+         table-frame/c
          ; default styles
          border-styles))
 
@@ -61,10 +132,10 @@
                (string-append* "\\begin{tabular}{"
                                (map align-ref align))
                "}"))
-  `(#\space  ("" " & " " \\\\")
-             (,als "" "")
-             ("\\hline" "" "")
-             ("\\end{tabular}" "" "")))
+  `((,als "" "" "")
+    ("" " " " & " " \\\\")
+    ("\\hline" "" "" "")
+    ("\\end{tabular}" "" "" "")))
 
 (define-syntax-rule (define/for/fold ([x a] ...) (y ...) body ...)
   (define-values (x ...)
@@ -147,57 +218,69 @@
         align))
 
   (define style
-    (if (list? border-style)
-      border-style
-      (case border-style
-        [(latex) (make-latex-border-style align-list)]
-        [else (dict-ref table-borders-dict border-style)])))
-  (define-values (row-sep col-seps first-row-corners mid-row-corners last-row-corners)
+    (cond [(eq? border-style 'latex)
+           (make-latex-border-style align-list)]
+          [(symbol? border-style)
+           (dict-ref table-borders border-style)]
+          [(table-border2/c border-style)
+           border-style]
+          [(table-border1/c border-style) ; old style
+           (border1->border2 border-style)]
+          [(table-frame/c border-style)
+           (frame->border2 border-style)]
+          [else
+           (error "Unrecognized style" border-style)]))
+  
+  (define-values (top-row-corners col-seps mid-row-corners bottom-row-corners)
     (apply values style))
 
-  (define (make-row-line row-corners)
-    (string-join
-     (for/list ([n (in-list cell-sizes)])
-       (make-string n row-sep))
-     (second row-corners)
-     #:before-first (if framed? (first row-corners) "")
-     #:after-last (if framed? (third row-corners) "")))
+  (define (make-row-line strs row-corners)
+    (define (@ n) (list-ref row-corners n))
+    (define row-sep (@ 1))
+    (string-join strs
+                 (@ 2)
+                 #:before-first (if framed? (@ 0) "")
+                 #:after-last   (if framed? (@ 3) "")))
 
+  (define (make-border-line row-corners)
+    (define row-sep (list-ref row-corners 1))
+    (define len (string-length row-sep))
+    (make-row-line
+     (if (= len 0)
+       (make-list (length cell-sizes) "")
+       (for/list ([n (in-list cell-sizes)])
+         (define-values (q r) (quotient/remainder n len))
+         (string-append (string-append* (make-list q row-sep))
+                        (substring row-sep 0 r))))
+     row-corners))
+
+  (define pad-string (list-ref col-seps 1))
+  
   (define rows-str
     (for/list ([row-strs (in-list (reverse ll-str))])
       (string-join
        (for/list ([row-str (in-list row-strs)])
-         (string-join
+         (make-row-line
           (for/list ([str (in-list row-str)]
                      [size (in-list cell-sizes)]
                      [al (in-list align-list)])
-            (~a str #:min-width size #:align al))
-                        (second col-seps)
-                        #:before-first (if framed? (first col-seps) "")
-                        #:after-last (if framed? (third col-seps) "")))
+            (~a str #:min-width size #:align al #:pad-string pad-string))
+          col-seps))
        "\n")))
 
   (string-join
    (if row-sep?
-       (add-between rows-str (make-row-line mid-row-corners))
+       (add-between rows-str (make-border-line mid-row-corners))
        rows-str)
    #:before-first
    (if framed?
-       (string-append (make-row-line first-row-corners) "\n")
+       (string-append (make-border-line top-row-corners) "\n")
        "")
    #:after-last
    (if framed?
-       (string-append "\n" (make-row-line last-row-corners))
+       (string-append "\n" (make-border-line bottom-row-corners))
        "")
    "\n"))
-
-(module+ test
-  (require rackunit)
-  (check-exn exn:fail? (λ () (table->string '())))
-  (check-exn exn:fail? (λ () (table->string '(a))))
-  (check-exn exn:fail? (λ () (table->string '([a b] [c]))))
-  (check-not-exn (λ () (table->string '([a b] [c d]))))
-  )
 
 ;; Usage example. To see the output, run:
 ;; racket -l text-table

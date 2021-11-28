@@ -129,7 +129,7 @@ Takes the same arguments as @racket[simple-table->string].
 @defthing[border-style/c contract?
           #:value
           (or/c
-           latex space space-single single rounded double
+           latex space space-single single rounded double heavy
            (list/c char? (code:comment "row sep")
               '(#\x 
                    (list/c string? string? string?) (code:comment "col seps")
