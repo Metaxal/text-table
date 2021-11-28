@@ -8,6 +8,10 @@
 
 (provide
  border-style/c
+ border-style1/c
+ border-style2/c
+ border-style-frame/c
+ string-length=/c
  (contract-out
   (table->string
    (->* ((listof list?))
@@ -64,11 +68,15 @@
      "┣━╋┫"
      "┗━┻┛")))
 
-(define table-frame/c
-  (list/c (string-len/c 5)
-          (string-len/c 5)
-          (string-len/c 5)
-          (string-len/c 5)))
+(define ((string-length=/c n) x)
+  (and (string? x)
+       (= n (string-length x))))
+
+(define border-style-frame/c
+  (list/c (string-length=/c 4)
+          (string-length=/c 4)
+          (string-length=/c 4)
+          (string-length=/c 4)))
 
 (define (frame->border2 frame)
   (map (λ (s) (map string (string->list s))) frame))
@@ -88,14 +96,14 @@
     (double        . (#\═      ("║" "║" "║") ("╔" "╦" "╗") ("╠" "╬" "╣") ("╚" "╩" "╝")))
     (heavy         . (#\━      ("┃" "┃" "┃") ("┏" "┳" "┓") ("┣" "╋" "┫") ("┗" "┻" "┛")))))
 
-(define table-border1/c
+(define border-style1/c
   (list/c char?
           (list/c string? string? string?)
           (list/c string? string? string?)
           (list/c string? string? string?)
           (list/c string? string? string?)))
 
-(define table-border2/c
+(define border-style2/c
   (list/c (list/c string? string? string? string?)
           (list/c string? string? string? string?)
           (list/c string? string? string? string?)
@@ -117,11 +125,11 @@
 (define border-style/c
   (apply or/c
          ; custom (old) style, kept for backward compatibility
-         table-border1/c
+         border-style1/c
          ; new style, with one row separator per row type
-         table-border2/c
+         border-style2/c
          ; custom "window" style
-         table-frame/c
+         border-style-frame/c
          ; default styles
          border-styles))
 
@@ -222,11 +230,11 @@
            (make-latex-border-style align-list)]
           [(symbol? border-style)
            (dict-ref table-borders border-style)]
-          [(table-border2/c border-style)
+          [(border-style2/c border-style)
            border-style]
-          [(table-border1/c border-style) ; old style
+          [(border-style1/c border-style) ; old style
            (border1->border2 border-style)]
-          [(table-frame/c border-style)
+          [(border-style-frame/c border-style)
            (frame->border2 border-style)]
           [else
            (error "Unrecognized style" border-style)]))

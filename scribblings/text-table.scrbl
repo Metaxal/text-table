@@ -4,7 +4,8 @@
           (for-label text-table
                      racket/contract
                      racket/base
-                     racket/format))
+                     racket/format
+                     racket/string))
 
 @title{text-table}
 @author{Laurent Orseau}
@@ -43,20 +44,32 @@ You can observe the results by running:
   #:border-style 'double
   #:framed? #f
   #:row-sep? #t
-  #:align '(left center center center center center center right))
+  #:align '(left center right))
 
- (code:comment "Custom border style")
+ (code:comment "Custom border style using border-style-frame/c")
  (print-table '((abc abc abc)
                 (abcdef ab abcdef)
                 (a abcdef abc))
               #:border-style
-              '(#\x (code:comment "row sep")
-                ("A" "B" "C") (code:comment "col seps")
-                ("D" "E" "F") (code:comment "first-row corners")
-                ("G" "H" "I") (code:comment "mid-row corners")
-                ("J" "K" "L")) (code:comment "last-row corners")
+              '("<-+>"
+                "(.│)"
+                "[-+]"
+                "{-+}")
+              #:align '(center)
               #:framed? #t
               #:row-sep? #t)
+
+ (code:comment "Custom border style using border-style2/c")
+  (print-table '((abc abc abc)
+                (abcdef ab abcdef)
+                (a abcdef abc))
+              #:border-style
+              '(("<table>" "" "" "")
+                ("<tr><td> " " " " </td><td> "  " </td></tr>")
+                ("" "" "" "")
+                ("</table>" "" "" ""))
+              #:framed? #t
+              #:row-sep? #f)
  ]
 
 @defproc[(table->string
@@ -130,14 +143,44 @@ Takes the same arguments as @racket[simple-table->string].
           #:value
           (or/c
            latex space space-single single rounded double heavy
-           (list/c char? (code:comment "row sep")
-              '(#\x 
-                   (list/c string? string? string?) (code:comment "col seps")
-                   (list/c string? string? string?) (code:comment "first-row corners")
-                   (list/c string? string? string?) (code:comment "mid-row corners")
-                   (list/c string? string? string?))) (code:comment "last-row corners")
+           border-style1/c
+           border-style2/c
+           border-style-frame/c
            )]{
 Border style contract.
 The list element is for custom border styles.
 See the example at the top of this document.
 }
+
+@defthing[border-style1/c contract?
+          #:value
+          (list/c char? (code:comment "row sep")
+                  (list/c string? string? string?) (code:comment "col seps")
+                  (list/c string? string? string?) (code:comment "first-row corners")
+                  (list/c string? string? string?) (code:comment "mid-row corners")
+                  (list/c string? string? string?) (code:comment "last-row corners"))]{
+The old border style. Obsolete but kept for backward compatibility.
+See @racket[border-style2/c] instead.}
+
+@defthing[border-style2/c contract?
+          #:value
+          (list/c (list/c string? string? string? string?) (code:comment "first-row corners")
+                  (list/c string? string? string? string?) (code:comment "col seps")
+                  (list/c string? string? string? string?) (code:comment "mid-row corners")
+                  (list/c string? string? string? string?) (code:comment "last-row corners"))]{
+ XXX}
+
+@defthing[border-style-frame/c contract?
+          #:value
+          (list/c (string-length=/c 5) (code:comment "first-row corners")
+                  (string-length=/c 5) (code:comment "col seps")
+                  (string-length=/c 5) (code:comment "mid-row corners")
+                  (string-length=/c 5) (code:comment "last-row corners"))]{
+XXX
+example}
+
+@defproc[((string-length=/c [n integer?]) [x any/c]) boolean?]{
+Returns @racket[#true] if @racket[x] is a string of length @racket[n].}
+
+
+
