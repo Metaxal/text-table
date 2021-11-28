@@ -51,10 +51,10 @@ You can observe the results by running:
                 (abcdef ab abcdef)
                 (a abcdef abc))
               #:border-style
-              '("<-+>"
-                "(.│)"
-                "[-+]"
-                "{-+}")
+              '("╭─┬╮"
+                "│.││"
+                "├─┼┤"
+                "╰─┴╯")
               #:align '(center)
               #:framed? #t
               #:row-sep? #t)
