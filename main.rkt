@@ -34,6 +34,14 @@
  print-table
  print-simple-table)
 
+(define (repeat-string str len)
+  (cond [(= 0 len) ""]
+        [else
+         (define str-len (string-length str))
+         (define-values (q r) (quotient/remainder len str-len))
+         (string-append (string-append* (make-list q str))
+                        (substring str 0 r))]))
+
 ;; "Window" style frames.
 ;; Easier to specify, and more flexible since col seps may be different for top, middle and bottom.
 (define table-frames
@@ -252,14 +260,12 @@
 
   (define (make-border-line row-corners)
     (define row-sep (list-ref row-corners 1))
-    (define len (string-length row-sep))
+    (define row-sep-len (string-length row-sep))
     (make-row-line
-     (if (= len 0)
+     (if (= row-sep-len 0)
        (make-list (length cell-sizes) "")
-       (for/list ([n (in-list cell-sizes)])
-         (define-values (q r) (quotient/remainder n len))
-         (string-append (string-append* (make-list q row-sep))
-                        (substring row-sep 0 r))))
+       (for/list ([len (in-list cell-sizes)])
+         (repeat-string row-sep len)))
      row-corners))
 
   (define pad-string (list-ref col-seps 1))

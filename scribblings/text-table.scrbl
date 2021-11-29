@@ -110,7 +110,7 @@ You can observe the results by running:
 @defproc[(simple-table->string
           [table (listof list?)]
           [#:->string to-string procedure? ~a]
-          [#:border-style border-style/c 'space]
+          [#:border-style border-style border-style/c 'space]
           [#:framed? framed? boolean? #f]
           [#:row-sep? row-sep? boolean? #f]
           [#:align align
@@ -118,8 +118,7 @@ You can observe the results by running:
                  (or/c 'left 'center 'right))
            'left])
          string?]{
-  Like @racket[table->string], but prints the table instead of returning it
-  and uses default arguments for a minimalistic table.
+  Like @racket[table->string], but with different default arguments to output a minimalistic table.
 }
 @examples[#:eval my-eval
           (displayln
@@ -142,7 +141,7 @@ Takes the same arguments as @racket[simple-table->string].
 @defthing[border-style/c contract?
           #:value
           (or/c
-           latex space space-single single rounded double heavy
+           'latex 'space 'space-single 'single 'rounded 'double 'heavy
            border-style1/c
            border-style2/c
            border-style-frame/c
@@ -155,29 +154,62 @@ See the example at the top of this document.
 @defthing[border-style1/c contract?
           #:value
           (list/c char? (code:comment "row sep")
-                  (list/c string? string? string?) (code:comment "col seps")
-                  (list/c string? string? string?) (code:comment "first-row corners")
-                  (list/c string? string? string?) (code:comment "mid-row corners")
-                  (list/c string? string? string?) (code:comment "last-row corners"))]{
+                  (list/c string? string? string?) (code:comment "text line")
+                  (list/c string? string? string?) (code:comment "top line")
+                  (list/c string? string? string?) (code:comment "middle line")
+                  (list/c string? string? string?) (code:comment "bottom line"))]{
 The old border style. Obsolete but kept for backward compatibility.
-See @racket[border-style2/c] instead.}
+See @racket[border-style2/c] instead.
+Note that, compared to @racket[border-style2/c],
+the first an second lists are in reverse order,
+the row separator is the same for all lines,
+and the space filler is always @racket[" "].
+}
 
 @defthing[border-style2/c contract?
           #:value
-          (list/c (list/c string? string? string? string?) (code:comment "first-row corners")
-                  (list/c string? string? string? string?) (code:comment "col seps")
-                  (list/c string? string? string? string?) (code:comment "mid-row corners")
-                  (list/c string? string? string? string?) (code:comment "last-row corners"))]{
- XXX}
+          (list/c (list/c string? string? string? string?) (code:comment "top line")
+                  (list/c string? string? string? string?) (code:comment "text line")
+                  (list/c string? string? string? string?) (code:comment "middle line")
+                  (list/c string? string? string? string?) (code:comment "bottom line"))]{
+ Each string specifies one of the elements of the frame of the table.
+ The strings can be of arbitrary length
+ @examples[#:eval my-eval
+           #:label #f
+           (print-table
+            '((_ _ ____ _)
+              (_ _ _ _)
+              (__ "_\n__" _ _))
+            #:border-style
+            '(("╭" "^" "┬" "╮")
+              ("{" "." "│" "}")
+              ("├" "─" "+" "┤")
+              ("╰" "v" "┴" "╯")))]
+ The element @racket["."] is a space filler.
+ Note that each element can be a multi-character string rather than a single char.
+ See also @racket[border-style-frame/c].
+}
 
 @defthing[border-style-frame/c contract?
           #:value
-          (list/c (string-length=/c 5) (code:comment "first-row corners")
-                  (string-length=/c 5) (code:comment "col seps")
-                  (string-length=/c 5) (code:comment "mid-row corners")
-                  (string-length=/c 5) (code:comment "last-row corners"))]{
-XXX
-example}
+          (list/c (string-length=/c 5) (code:comment "top line")
+                  (string-length=/c 5) (code:comment "text line")
+                  (string-length=/c 5) (code:comment "middle line")
+                  (string-length=/c 5) (code:comment "bottom line"))]{
+ A simplification of @racket[border-style2/c] where each element of the frame is a single
+ character, so they can all be specified in a single string per line.
+ @examples[#:eval my-eval
+           #:label #f
+           (print-table '((abc abc abc)
+                (abcdef ab abcdef)
+                (a abcdef abc))
+              #:border-style
+              '("╭─┬╮"
+                "│.││"
+                "├─┼┤"
+                "╰─┴╯")
+              #:align '(center))]
+Note that the @racket["."] is the space filler.}
 
 @defproc[((string-length=/c [n integer?]) [x any/c]) boolean?]{
 Returns @racket[#true] if @racket[x] is a string of length @racket[n].}

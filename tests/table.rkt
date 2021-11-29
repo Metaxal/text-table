@@ -16,6 +16,18 @@
                              "│c│3  │"
                              "└─┴───┘")
                            "\n"))
+; Check border-style1/c still works
+(check-equal? (table->string '([a "b\nbbb"] [c 3])
+                             #:border-style
+                             '(#\─      ("│" "│" "│") ("┌" "┬" "┐") ("├" "┼" "┤") ("└" "┴" "┘"))
+                             )
+              (string-join '("┌─┬───┐"
+                             "│a│b  │"
+                             "│ │bbb│"
+                             "├─┼───┤"
+                             "│c│3  │"
+                             "└─┴───┘")
+                           "\n"))
 
 (check-equal? (table->string '((a b c d e f gggg h)
                                (123 456 77 54 "a\nbbbb\nc" 5646547987 41 1)
@@ -35,6 +47,7 @@ a   &  b  &    c & d  &  e   &     f      & gggg &  h   \\\\
 111 & 22  & 3333 & 44 &  5   &     6      &  7   & 8888 \\\\
 \\end{tabular}")
 
+;; border-style-frame/c
 (check-equal?
  (table->string '((a b c d e f gggg h)
                   (123 456 77 54 "a\nbbb\nc"  123456 41 1)

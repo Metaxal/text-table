@@ -1,6 +1,7 @@
 text-table
 ==========
 A simple package to display utf-8 textual tables.
+Check out the [docs](https://docs.racket-lang.org/text-table/index.html).
 
 To install:
 ```
@@ -13,43 +14,58 @@ You can observe the results by running:
 racket -l text-table
 ```
 
-Two examples:
-```
+A minimalistic example:
+```scheme
 #lang racket
 (require text-table)
 
-;; Minimalistic example:
-(displayln
- (table->string
-  '((a b c d e f gggg h)
-    (123 456 77 54 1  5646547987 41 1)
-    (111 22 3333 44 5 6 7 8888))))
-
-;; With more bells and whistles
-(displayln
- (table->string
-  '((a b c d e f gggg h)
-    (123 456 77 54 1  5646547987 41 1)
-    (111 22 3333 44 5 6 7 8888))
-  #:border-style 'double
-  #:framed? #f
-  #:row-sep? #t
-  #:align '(left center center center center center center right)))
+(print-simple-table
+ '((a b c d e f gggg h)
+   (12  "a\nbcde" 77 54 1  5646547987 41 1)
+   (111 222 3333 44 5 6 7 8888)))
 ```
-This outputs:
+Output:
 ```
-┌───┬───┬────┬──┬─┬──────────┬────┬────┐
-│a  │b  │c   │d │e│f         │gggg│h   │
-├───┼───┼────┼──┼─┼──────────┼────┼────┤
-│123│456│77  │54│1│5646547987│41  │1   │
-├───┼───┼────┼──┼─┼──────────┼────┼────┤
-│111│22 │3333│44│5│6         │7   │8888│
-└───┴───┴────┴──┴─┴──────────┴────┴────┘
-a  ║ b ║ c  ║d ║e║    f     ║gggg║   h
-═══╬═══╬════╬══╬═╬══════════╬════╬════
-123║456║ 77 ║54║1║5646547987║ 41 ║   1
-═══╬═══╬════╬══╬═╬══════════╬════╬════
-111║22 ║3333║44║5║    6     ║ 7  ║8888
+a   b    c    d  e f          gggg h   
+12  a    77   54 1 5646547987 41   1   
+    bcde                               
+111 222  3333 44 5 6          7    8888
+```
+A less minimalistic example:
+```scheme
+(print-table
+ '((a b c d e f gggg h)
+   (12  "a\nbcde" 77 54 1  5646547987 41 1)
+   (111 222 3333 44 5 6 7 8888)))
+```
+```
+┌───┬────┬────┬──┬─┬──────────┬────┬────┐
+│a  │b   │c   │d │e│f         │gggg│h   │
+├───┼────┼────┼──┼─┼──────────┼────┼────┤
+│12 │a   │77  │54│1│5646547987│41  │1   │
+│   │bcde│    │  │ │          │    │    │
+├───┼────┼────┼──┼─┼──────────┼────┼────┤
+│111│222 │3333│44│5│6         │7   │8888│
+└───┴────┴────┴──┴─┴──────────┴────┴────┘
+```
+An example with some more bells and whistles:
+```scheme
+(print-table
+ '((a b c d e f gggg h)
+   (12  "a\nbcde" 77 54 1  5646547987 41 1)
+   (111 222 3333 44 5 6 7 8888))
+ #:border-style 'double
+ #:framed? #f
+ #:row-sep? #t
+ #:align '(left center center center center center center right))
+```
+```
+a  ║ b  ║ c  ║d ║e║    f     ║gggg║   h
+═══╬════╬════╬══╬═╬══════════╬════╬════
+12 ║ a  ║ 77 ║54║1║5646547987║ 41 ║   1
+   ║bcde║    ║  ║ ║          ║    ║    
+═══╬════╬════╬══╬═╬══════════╬════╬════
+111║222 ║3333║44║5║    6     ║ 7  ║8888
 ```
 
 
