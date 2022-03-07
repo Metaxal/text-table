@@ -4,43 +4,24 @@
          racket/dict
          racket/string
          racket/match
-         racket/contract)
+         racket/contract
+         "utils.rkt")
 
 (provide
+ string-length=/c
  border-style/c
  border-style1/c
  border-style2/c
  border-style-frame/c
- string-length=/c
  (contract-out
-  (table->string
-   (->* ((listof list?))
-        (#:->string (any/c . -> . string?)
-         #:border-style border-style/c
-         #:framed? boolean?
-         #:row-sep? boolean?
-         #:align (or/c (listof (or/c 'left 'center 'right))
-                       (or/c 'left 'center 'right)))
-        string?))
-  (simple-table->string
-   (->* ((listof list?))
-        (#:->string (any/c . -> . string?)
-         #:border-style border-style/c
-         #:framed? boolean?
-         #:row-sep? boolean?
-         #:align (or/c (listof (or/c 'left 'center 'right))
-                       (or/c 'left 'center 'right)))
-        string?)))
+  (table->string        table->string/c)
+  (simple-table->string table->string/c))
  print-table
  print-simple-table)
 
-(define (repeat-string str len)
-  (cond [(= 0 len) ""]
-        [else
-         (define str-len (string-length str))
-         (define-values (q r) (quotient/remainder len str-len))
-         (string-append (string-append* (make-list q str))
-                        (substring str 0 r))]))
+(define ((string-length=/c n) x)
+  (and (string? x)
+       (= n (string-length x))))
 
 ;; "Window" style frames.
 ;; Easier to specify, and more flexible since col seps may be different for top, middle and bottom.
@@ -75,10 +56,6 @@
      "┃ ┃┃"
      "┣━╋┫"
      "┗━┻┛")))
-
-(define ((string-length=/c n) x)
-  (and (string? x)
-       (= n (string-length x))))
 
 (define border-style-frame/c
   (list/c (string-length=/c 4)
@@ -153,12 +130,15 @@
     ("\\hline" "" "" "")
     ("\\end{tabular}" "" "" "")))
 
-(define-syntax-rule (define/for/fold ([x a] ...) (y ...) body ...)
-  (define-values (x ...)
-    (for/fold ([x a] ...) (y ...)
-      body ...)))
-
-(define (transpose xs) (apply map list xs))
+(define table->string/c
+  (->* ((listof list?))
+       (#:->string (pattern-list-of (any/c . -> . string?))
+        #:border-style border-style/c
+        #:framed? boolean?
+        #:row-sep? boolean?
+        #:align (pattern-list-of (or/c 'left 'center 'right))
+        #:row-align (pattern-list-of (or/c 'top 'center 'bottom)))
+       string?))
 
 (define-syntax-rule (print-table args ...)
   (displayln (table->string args ...)))
@@ -167,71 +147,52 @@
   (displayln (simple-table->string args ...)))
 
 (define (simple-table->string ll
-                              #:->string [->string ~a]
                               #:border-style [border-style 'space]
-                              #:framed? [framed? #f]
-                              #:row-sep? [row-sep? #f]
-                              #:align [align 'left]) ; like for ~a
+                              #:framed?      [framed?      #false]
+                              #:row-sep?     [row-sep?     #false]
+                              #:->string     [->string     ~a]
+                              #:align        [align        'left]
+                              #:row-align    [row-align    'top])
   (table->string ll
-                 #:->string ->string
                  #:border-style border-style
-                 #:framed? framed?
-                 #:row-sep? row-sep?
-                 #:align align))
+                 #:framed?      framed?
+                 #:->string     ->string
+                 #:row-sep?     row-sep?
+                 #:align        align
+                 #:row-align    row-align))
 
 (define (table->string ll
-                       #:->string [->string ~a]
                        #:border-style [border-style 'single]
-                       #:framed? [framed? #t]
-                       #:row-sep? [row-sep? #t]
-                       #:align [align 'left]) ; like for ~a
+                       #:framed?      [framed?      #true]
+                       #:row-sep?     [row-sep?     #true]
+                       #:->string     [->string     ~a]
+                       #:align        [align        'left]
+                       #:row-align    [row-align    'top])
+  ;::::::::::::::::::;
+  ;:: Check inputs ::;
+  ;::::::::::::::::::;
+
   (unless (and (list? ll) (not (empty? ll)) (andmap list? ll))
     (raise-argument-error 'table->string
                           "nonempty list of lists of the same lengths"
                           0 ll))
   (define lens (map length ll))
-  (define the-len (first lens))
-  (unless (andmap (λ (len) (= len the-len)) (rest lens))
+  (define n-rows (length ll))
+  (define n-columns (first lens))
+  (unless (andmap (λ (len) (= len n-columns)) (rest lens))
     (error "All rows must have the same length"))
-  
-  (define/for/fold ([cell-sizes (make-list the-len 0)]
-                    [ll-str '()])
-                   ([row (in-list ll)])
-    (define/for/fold ([new-cell-sizes '()]
-                      [subrow-size 0]
-                      [row-str '()])
-                     ([cell (in-list row)]
-                      [size (in-list cell-sizes)])
-      (define as-str (->string cell))
-      (define str-splitted (string-split (if (non-empty-string? as-str)
-                                             as-str
-                                             " ")
-                                         "\n"))
-      (values
-       (cons (apply max size (map string-length str-splitted)) new-cell-sizes)
-       (max subrow-size (length str-splitted))
-       (cons str-splitted row-str)))
 
-    (values
-     (reverse new-cell-sizes)
-     (cons (transpose
-            (for/list ([col-group (in-list (reverse row-str))])
-              (append col-group
-                      (make-list (- subrow-size (length col-group)) ""))))
-           ll-str)))
+  ;::::::::::::::::::::::::;
+  ;:: Prepare align list ::;
+  ;::::::::::::::::::::::::;
 
-  ;; Adjust align to the cells
-  (when (list? align)
-    (define nal (length align))
-    (define nc (length cell-sizes))
-    (cond [(= nal 0) (error "align cannot be an empty list")]
-          [(< nc nal) (set! align (take align nc))] ; trim
-          [(> nc nal) (set! align (append align (make-list (- nc nal) (last align))))])) ; extend
+  (define ->string-list  (pattern-list->list ->string  n-columns))
+  (define align-list     (pattern-list->list align     n-columns))
+  (define row-align-list (pattern-list->list row-align n-rows))
 
-  (define align-list
-    (if (symbol? align)
-        (make-list (length cell-sizes) align)
-        align))
+  ;:::::::::::::::::::;
+  ;:: Prepare style ::;
+  ;:::::::::::::::::::;
 
   (define style
     (cond [(eq? border-style 'latex)
@@ -249,7 +210,55 @@
   
   (define-values (top-row-corners col-seps mid-row-corners bottom-row-corners)
     (apply values style))
+  (define pad-string (list-ref col-seps 1))
 
+  ;:::::::::::::::::::::::::;
+  ;:: Transform the table ::;
+  ;:::::::::::::::::::::::::;
+
+  ;; ll: 2d-list of any/c
+
+  ;; 0. Each cell initially contains a string, possibly with newlines, turn
+  ;     them into lists of strings without newline.
+  ;; TODO: We can't consider that a list in a cell is a multiline,
+  ;; but we could have a `cell` struct that can contains multiple elements
+  ;; to be displayed on several lines
+  (define ll1
+    (map (λ (row) (map (λ (cell ->string)
+                         (define res (string-split (if (string? cell) cell (->string cell))
+                                                   "\n"))
+                         (if (empty? res) '("") res))
+                       row
+                       ->string-list))
+         ll))
+
+  #;(writeln ll1)
+
+  ;; ll1: 3d-list of string
+  ;; (cells are list of strings)
+  
+  ;; 1. transpose table,
+  ;;    align-column, so that all lines in a cell of all cells of the column have the same width
+  ;;    transpose table back
+  (define ll2
+    (transpose
+     (map (λ (mcol align) (apply/2d-list-as-list align-column mcol align pad-string))
+          (transpose ll1)
+          align-list)))
+
+  #;(writeln ll2)
+
+  ;; 2. align-row, to create the missing lines in the cell, so all cells in the same
+  ;;    row have the same number of lines (same height)
+  (define ll3 (map (λ (mrow align) (align-row mrow align pad-string))
+                   ll2
+                   row-align-list))
+
+  #;(writeln ll3)
+
+  (define cell-sizes (map (λ (mcell) (string-length (first mcell)))
+                          (first ll3)))
+  
   (define (make-row-line strs row-corners)
     (define (@ n) (list-ref row-corners n))
     (define row-sep (@ 1))
@@ -257,44 +266,47 @@
                  (@ 2)
                  #:before-first (if framed? (@ 0) "")
                  #:after-last   (if framed? (@ 3) "")))
+  
+  ;; 3. For each mrow, transpose the mrow, then string-join the lines of a rows
+  ;;    to obtain a simple list of strings, one per line, but without the frame rows.
+  (define ll4
+    (map (λ (mrow)
+           (string-join
+            (map (λ (strs) (make-row-line strs col-seps))
+                 (transpose mrow))
+            "\n"))
+         ll3))
 
-  (define (make-border-line row-corners)
+  #;(writeln ll4)
+
+  (define (make-sep-line row-corners)
     (define row-sep (list-ref row-corners 1))
     (define row-sep-len (string-length row-sep))
     (make-row-line
      (if (= row-sep-len 0)
        (make-list (length cell-sizes) "")
        (for/list ([len (in-list cell-sizes)])
-         (repeat-string row-sep len)))
+         (string-repeat row-sep len)))
      row-corners))
 
-  (define pad-string (list-ref col-seps 1))
-  
-  (define rows-str
-    (for/list ([row-strs (in-list (reverse ll-str))])
-      (string-join
-       (for/list ([row-str (in-list row-strs)])
-         (make-row-line
-          (for/list ([str (in-list row-str)]
-                     [size (in-list cell-sizes)]
-                     [al (in-list align-list)])
-            (~a str #:min-width size #:align al #:pad-string pad-string))
-          col-seps))
-       "\n")))
-
+  ;; 4. Finally, append all the lines together, adding the frame lines if applicable.
   (string-join
-   (if row-sep?
-       (add-between rows-str (make-border-line mid-row-corners))
-       rows-str)
    #:before-first
    (if framed?
-       (string-append (make-border-line top-row-corners) "\n")
+       (string-append (make-sep-line top-row-corners) "\n")
        "")
+   (if row-sep?
+       (add-between ll4 (make-sep-line mid-row-corners))
+       ll4)
+   "\n"
    #:after-last
    (if framed?
-       (string-append "\n" (make-border-line bottom-row-corners))
-       "")
-   "\n"))
+       (string-append "\n" (make-sep-line bottom-row-corners))
+       "")))
+
+;============;
+;=== Main ===;
+;============;
 
 ;; Usage example. To see the output, run:
 ;; racket -l text-table
@@ -350,3 +362,75 @@
     `(["hello\nworld" "1\n2\n3" "3" ""]
       ["" "" "" ""]
       ["a\nbb\nccc\ndddd" "1" "22\n22" ""]))))
+
+;; col: (listof string?)
+;; align: (or/c 'left 'center 'right)
+(define (align-column col align pad-string)
+  (define width (apply max (map string-length col)))
+  (map (λ (str)
+         (~a str #:min-width width #:align align #:pad-string pad-string))
+       col))
+
+;; mrow: 2d-list?
+;; align: (or/c 'top 'center 'bottom)
+(define (align-row mrow align pad-string)
+  (define height (apply max (map length mrow)))
+  (map (λ (mcell)
+         (define n (- height (length mcell)))
+         (define str-len (string-length (first mcell)))
+         (define pad (string-repeat pad-string str-len))
+         (case align
+           [(top) (append mcell (make-list n pad))]
+           [(bottom) (append (make-list n pad) mcell)]
+           [(center)
+            (define h (length mcell))
+            (define ntop (quotient h 2))
+            (append (make-list ntop pad) mcell (make-list (- height h ntop) pad))]
+           [else (error "Unknown align-row align:" align)]))
+       mrow))
+
+(define numeric-rx #px"^\\s*([-+]?)\\s*(\\d*)(\\.?)(\\d*)(e?)([-+]?)(\\d*)\\s*$")
+  
+(define (align-column-numeric col align pad-string)
+  (define cols
+    (transpose
+     (map
+      (λ (str)
+        (define m (regexp-match numeric-rx str))
+        (if m
+          (cons #f (rest m))
+          (cons str (make-list 7 ""))))
+      col)))
+  (define rows
+    (transpose
+     (cons (first cols)
+           (map (λ (col align pad) (align-column col align pad))
+                (rest cols)
+                '(right right left left left left right)
+                (list pad-string pad-string "." "0" "e" "+" "0")))))
+  (align-column
+   (for/list ([row (in-list rows)])
+     (or (first row)
+         (string-append* (rest row))))
+   align
+   pad-string))
+
+(module+ drracket
+
+  (for ([col (list
+              (map ~a '(1 100 1000))
+              (map ~a '(1 100 1000 -12))
+              (map ~a '(1 100 1000 1.12))
+              (map ~a '(1 100 1000 3e25))
+              (map ~a '(1 100 1000 3e25 2.12e31))
+              '("hello" "1.2e34" "+inf.0" "12e34"
+                        "12345" "12.34" "1.234e-3" "2.322e+03" "-nan.0" "-13.3"))])
+    (displayln (string-join (align-column-numeric col 'center "_") "\n"))
+    (newline))
+
+  (define mcol
+    '(("hello") ("1.2e34") ("+inf.0" "12e34")
+                ("12345" "12.34" "1.234e-3" "2.322e+03") ("-nan.0") ("-13.3")))
+
+  (apply/2d-list-as-list align-column-numeric mcol 'right "_")
+  (flatten (apply/2d-list-as-list align-column-numeric mcol 'right "_")))

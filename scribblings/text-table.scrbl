@@ -7,14 +7,17 @@
                      racket/format
                      racket/string))
 
-@title{text-table}
+@title{Text Table}
 @author{Laurent Orseau}
 
 @(define my-eval
    (parameterize ([sandbox-output 'string]
                   [sandbox-error-output 'string]
                   [sandbox-memory-limit 50])
-     (make-evaluator 'racket/base '(require text-table))))
+     (make-evaluator 'racket/base '(require text-table
+                                            text-table/utils
+                                            racket/format
+                                            racket/list))))
 
 @defmodule[text-table]{
  A simple package to display utf-8 textual tables.}
@@ -72,19 +75,23 @@ You can observe the results by running:
               #:row-sep? #f)
  ]
 
+@section{Tables}
+
 @defproc[(table->string
           [table (listof list?)]
-          [#:->string to-string procedure? ~a]
+          [#:->string to-string (pattern-list-of (any/c . -> . string)) ~a]
           [#:border-style border-style border-style/c 'single]
           [#:framed? framed? boolean? #t]
           [#:row-sep? row-sep? boolean? #t]
           [#:align align
-           (or/c (listof (or/c 'left 'center 'right))
-                 (or/c 'left 'center 'right))
-           'left])
+           (pattern-list-of (or/c 'left 'center 'right))
+           'left]
+          [#:row-align row-align
+           (pattern-list-of (or/c 'top 'center 'bottom))
+           'top])
          string?]{
  Accepts a table specified as a list of lists, and returns a string
- representing the table. The lists must all be of the same length.
+ representing the table. The lists must all be of the same lengths.
 
  The @racket[to-string] procedure is used to convert cell values to
  strings.
@@ -105,6 +112,12 @@ You can observe the results by running:
  independently. When @racket[align] is a list, it is trimmed to the length
  of the columns if it is too long, or the last element of the list is used
  for the remaining columns if it is too short.
+
+ The @racket[row-align] specification indicates how the contents of the cells
+ are aligned in a row, when cells are strings with multiple lines.
+
+ The @racket[to-string], @racket[align] and @racket[row-align] specifications
+ accept pattern lists
 }
 
 @defproc[(simple-table->string
@@ -211,8 +224,100 @@ and the space filler is always @racket[" "].
               #:align '(center))]
 Note that the @racket["."] is the space filler.}
 
+
 @defproc[((string-length=/c [n integer?]) [x any/c]) boolean?]{
-Returns @racket[#true] if @racket[x] is a string of length @racket[n].}
+Returns @racket[#true] if @racket[x] is a string of length @racket[n],
+ @racket[#false] otherwise.}
+
+@section{Utilities}
+
+@defmodule[text-table/utils]{Utilities used to build text tables.}
+
+@subsection{Lists}
+
+@defproc[((pattern-list-of [pred? (procedure-arity-includes/c 1)]) [x any/c]) boolean?]{
+ Returns @racket[#true] if either @racket[x] is not a list and @racket[(pred? x)] is @racket[#true],
+ or @racket[x] is a list @racket[(head ... dots ... tail ...)]
+ satisfying  @racket[(andmap pred? (head ... tail ...))]
+ and @racket[(dots ...)] is a list of @racket['...] not longer than @racket[(head ...)].
+}
+
+@defproc[(pattern-list->list [pat (pattern-list-of any/c)] [result-length exact-nonnegative-integer?])
+         list?]{
+@examples[#:eval my-eval
+          (pattern-list->list 'a 3)
+          (pattern-list->list '(a) 3)
+          (pattern-list->list '(a b) 5)
+          (pattern-list->list '(a b ...) 5)
+          (pattern-list->list '(a b c ... ...) 10)
+          (pattern-list->list '(a b c d ... ... ... e f) 10)]
+}
+
+@defproc[(transpose [l (listof list?)]) (listof list?)]{
+ Returns a new list where the columns and rows of @racket[l] are swapped.
+@examples[#:eval my-eval
+           (transpose '((a b c) (1 2 3)))]
+}
 
 
+@defproc[(group-by-lengths [l list?] [lengths (listof exact-nonnegative-integer?)])
+         (listof list?)]{
+ Returns a list with the same elements as @racket[l] but grouped in sublists
+ of lengths given by @racket[lengths].
+@examples[#:eval my-eval
+           (group-by-lengths '(a b c d e f g)
+                             '(1 0 2 3 0 1))]
+}
+
+@;@defproc[(apply/2d-list-as-list [proc procedure?] [ll (listof list?)] [args any/c] ...)
+@;         (listof (list))]{TODO}
+
+@subsection{Strings}
+
+@defproc[(string-repeat [str string?] [len exact-nonnegative-integer?]) string?]{
+Returns a string of length @racket[len] by repeating @racket[str].
+ @examples[#:eval my-eval
+           (string-repeat "abc" 5)
+           (string-repeat "abc" 2)]}
+
+@defproc[(~r*  [#:sign sign
+                       (or/c #f '+ '++ 'parens
+                             (let ([ind (or/c string? (list/c string? string?))])
+                               (list/c ind ind ind)))
+                       #f]
+               [#:base base
+                       (or/c (integer-in 2 36) (list/c 'up (integer-in 2 36)))
+                       10]
+               [#:precision precision
+                            (or/c exact-nonnegative-integer?
+                                  (list/c '= exact-nonnegative-integer?)) 
+                            6]
+               [#:notation notation
+                           (or/c 'positional 'exponential
+                                 (-> rational? (or/c 'positional 'exponential)))
+                           'positional]
+               [#:format-exponent format-exponent
+                (or/c #f string? (-> exact-integer? string?))
+                #f]
+               [#:min-width min-width exact-positive-integer? 1]
+               [#:pad-string pad-string non-empty-string? " "])
+         (any/c . -> . string?)]{
+Like @racket[~r] but curried, and also accepts non-rationals,
+ which are printed with @racket[~a] instead.
+ @examples[#:eval my-eval
+           (print-table
+            #:->string (list ~a (code:comment "1")
+                             (~r*) (code:comment "2")
+                             (~r* #:notation 'exponential) (code:comment "3")
+                             (~r* #:precision '(= 2)) (code:comment "4 (good)")
+                             (~r* #:notation 'exponential #:precision '(= 2)) (code:comment "5 (good)")
+                             (~r* #:min-width 10 #:pad-string ".")) (code:comment "6")
+            #:align '(right ... )
+            (cons
+             '("1" "2" "3" "4 (good)" "5 (good)" "6") 
+             (transpose
+             (make-list 6 `(header 1111.11 22.222 33.33e5 4.44e12 ,(sqrt 2))))))]
+}
+@;'("1" "2" "3" "4👍\u200B" "5👍\u200B" "6")
+@; cheat because 👍 is double-width. \u200B is a zero-width space
 
