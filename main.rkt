@@ -165,7 +165,7 @@
        mrow))
 
 (define numeric-rx #px"^\\s*([-+]?)\\s*(\\d*)(\\.?)(\\d*)(e?)([-+]?)(\\d*)\\s*$")
-  
+
 (define (align-column-numeric col align pad-string)
   (define cols
     (transpose

@@ -75,20 +75,32 @@ You can observe the results by running:
               #:framed? #t
               #:row-sep? #f)
 
- (code:comment "")
+ (code:comment "Aligning numbers (incorrectly then well)")
   (print-table
    #:row-sep? #f
    #:align '(left right ... left)
    #:->string
    (list
-    ~a @(code:comment "Name")
-    ~a (~r*) (~r* #:precision '(= 2)) (~r* #:notation 'exponential) @(code:comment "Speed")
-    ~a) @(code:comment "Unit")
+    ~a (code:comment "Name")
+    ~a (~r*) (~r* #:precision '(= 2)) (~r* #:notation 'exponential) (code:comment "Speed")
+    ~a) (code:comment "Unit")
+    (code:comment "The table:")
     (map (λ (l) (pattern-list->list l 6))
         `((Name Speed ... Unit)
           (Albert 10 ... "km/h")
           (Suzie ,(sqrt 2) ... "m/s")
           (light ,(* 299792458 (expt 10 3)) ... "mm/s"))))
+
+ (code:comment "Empty style and doubly repeating alignments")
+ (print-simple-table
+   #:border-style '(#\space  ("" "" "")("" "" "")("" "" "")("" "" ""))
+   #:align '(right left ... ...)
+  (list (make-list 10 '*)
+        (make-list 10 '**)
+        (make-list 10 '***)
+        (make-list 10 '****)
+        (make-list 10 '*****)
+        (make-list 10 "|")))
  ]
 
 @section{Tables}
