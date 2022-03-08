@@ -74,11 +74,17 @@ You can observe the results by running:
                 ("</table>" "" "" ""))
               #:framed? #t
               #:row-sep? #f)
+  
+  (code:comment "LaTeX style")
+  (print-table '((abc abc abc)
+                (abcdef ab abcdef)
+                (a abcdef abc))
+              #:border-style 'latex)
 
  (code:comment "Aligning numbers (incorrectly then well)")
   (print-table
    #:row-sep? #f
-   #:align '(left right ... left)
+   #:align '(left right ... center)
    #:->string
    (list
     ~a (code:comment "Name")
@@ -87,8 +93,9 @@ You can observe the results by running:
     (code:comment "The table:")
     (map (λ (l) (pattern-list->list l 6))
         `((Name Speed ... Unit)
-          (Albert 10 ... "km/h")
-          (Suzie ,(sqrt 2) ... "m/s")
+          (Alice 10 ... "km/h")
+          (Bob ,(sqrt 2) ... "m/s")
+          (Charlie +inf.0 +nan.0 ... ... n/a)
           (light ,(* 299792458 (expt 10 3)) ... "mm/s"))))
 
  (code:comment "Empty style and doubly repeating alignments")
