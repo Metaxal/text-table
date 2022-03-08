@@ -2,6 +2,7 @@
 @(require racket/sandbox
           scribble/example
           (for-label text-table
+                     text-table/utils
                      racket/contract
                      racket/base
                      racket/format
@@ -73,6 +74,21 @@ You can observe the results by running:
                 ("</table>" "" "" ""))
               #:framed? #t
               #:row-sep? #f)
+
+ (code:comment "")
+  (print-table
+   #:row-sep? #f
+   #:align '(left right ... left)
+   #:->string
+   (list
+    ~a @(code:comment "Name")
+    ~a (~r*) (~r* #:precision '(= 2)) (~r* #:notation 'exponential) @(code:comment "Speed")
+    ~a) @(code:comment "Unit")
+    (map (λ (l) (pattern-list->list l 6))
+        `((Name Speed ... Unit)
+          (Albert 10 ... "km/h")
+          (Suzie ,(sqrt 2) ... "m/s")
+          (light ,(* 299792458 (expt 10 3)) ... "mm/s"))))
  ]
 
 @section{Tables}
