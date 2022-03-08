@@ -23,6 +23,10 @@
   (and (string? x)
        (= n (string-length x))))
 
+;==============;
+;=== Frames ===;
+;==============;
+
 ;; "Window" style frames.
 ;; Easier to specify, and more flexible since col seps may be different for top, middle and bottom.
 (define table-frames
@@ -129,6 +133,66 @@
     ("" " " " & " " \\\\")
     ("\\hline" "" "" "")
     ("\\end{tabular}" "" "" "")))
+
+;==================;
+;=== Alignments ===;
+;==================;
+
+;; col: (listof string?)
+;; align: (or/c 'left 'center 'right)
+(define (align-column col align pad-string)
+  (define width (apply max (map string-length col)))
+  (map (λ (str)
+         (~a str #:min-width width #:align align #:pad-string pad-string))
+       col))
+
+;; mrow: 2d-list?
+;; align: (or/c 'top 'center 'bottom)
+(define (align-row mrow align pad-string)
+  (define height (apply max (map length mrow)))
+  (map (λ (mcell)
+         (define n (- height (length mcell)))
+         (define str-len (string-length (first mcell)))
+         (define pad (string-repeat pad-string str-len))
+         (case align
+           [(top) (append mcell (make-list n pad))]
+           [(bottom) (append (make-list n pad) mcell)]
+           [(center)
+            (define h (length mcell))
+            (define ntop (quotient h 2))
+            (append (make-list ntop pad) mcell (make-list (- height h ntop) pad))]
+           [else (error "Unknown align-row align:" align)]))
+       mrow))
+
+(define numeric-rx #px"^\\s*([-+]?)\\s*(\\d*)(\\.?)(\\d*)(e?)([-+]?)(\\d*)\\s*$")
+  
+(define (align-column-numeric col align pad-string)
+  (define cols
+    (transpose
+     (map
+      (λ (str)
+        (define m (regexp-match numeric-rx str))
+        (if m
+          (cons #f (rest m))
+          (cons str (make-list 7 ""))))
+      col)))
+  (define rows
+    (transpose
+     (cons (first cols)
+           (map (λ (col align pad) (align-column col align pad))
+                (rest cols)
+                '(right right left left left left right)
+                (list pad-string pad-string "." "0" "e" "+" "0")))))
+  (align-column
+   (for/list ([row (in-list rows)])
+     (or (first row)
+         (string-append* (rest row))))
+   align
+   pad-string))
+
+;=====================;
+;=== table->string ===;
+;=====================;
 
 (define table->string/c
   (->* ((listof list?))
@@ -363,62 +427,12 @@
       ["" "" "" ""]
       ["a\nbb\nccc\ndddd" "1" "22\n22" ""]))))
 
-;; col: (listof string?)
-;; align: (or/c 'left 'center 'right)
-(define (align-column col align pad-string)
-  (define width (apply max (map string-length col)))
-  (map (λ (str)
-         (~a str #:min-width width #:align align #:pad-string pad-string))
-       col))
-
-;; mrow: 2d-list?
-;; align: (or/c 'top 'center 'bottom)
-(define (align-row mrow align pad-string)
-  (define height (apply max (map length mrow)))
-  (map (λ (mcell)
-         (define n (- height (length mcell)))
-         (define str-len (string-length (first mcell)))
-         (define pad (string-repeat pad-string str-len))
-         (case align
-           [(top) (append mcell (make-list n pad))]
-           [(bottom) (append (make-list n pad) mcell)]
-           [(center)
-            (define h (length mcell))
-            (define ntop (quotient h 2))
-            (append (make-list ntop pad) mcell (make-list (- height h ntop) pad))]
-           [else (error "Unknown align-row align:" align)]))
-       mrow))
-
-(define numeric-rx #px"^\\s*([-+]?)\\s*(\\d*)(\\.?)(\\d*)(e?)([-+]?)(\\d*)\\s*$")
-  
-(define (align-column-numeric col align pad-string)
-  (define cols
-    (transpose
-     (map
-      (λ (str)
-        (define m (regexp-match numeric-rx str))
-        (if m
-          (cons #f (rest m))
-          (cons str (make-list 7 ""))))
-      col)))
-  (define rows
-    (transpose
-     (cons (first cols)
-           (map (λ (col align pad) (align-column col align pad))
-                (rest cols)
-                '(right right left left left left right)
-                (list pad-string pad-string "." "0" "e" "+" "0")))))
-  (align-column
-   (for/list ([row (in-list rows)])
-     (or (first row)
-         (string-append* (rest row))))
-   align
-   pad-string))
 
 (module+ drracket
 
   (for ([col (list
               (map ~a '(1 100 1000))
+              (map ~a '(1 100 1e3))
               (map ~a '(1 100 1000 -12))
               (map ~a '(1 100 1000 1.12))
               (map ~a '(1 100 1000 3e25))
