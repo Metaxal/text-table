@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require racket/sandbox
           scribble/example
+          text-table
           (for-label text-table
                      text-table/utils
                      racket/contract
@@ -83,7 +84,8 @@ You can observe the results by running:
 
  (code:comment "Aligning numbers (incorrectly then well)")
   (print-table
-   #:row-sep? #f
+   #:row-sep? '(#t #f)
+   #:col-sep? '(#t #f)
    #:align '(left right ... center)
    #:->string
    (list
@@ -100,7 +102,7 @@ You can observe the results by running:
 
  (code:comment "Empty style and doubly repeating alignments")
  (print-simple-table
-   #:border-style '(#\space  ("" "" "")("" "" "")("" "" "")("" "" ""))
+   #:border-style 'empty
    #:align '(right left ... ...)
   (list (make-list 10 '*)
         (make-list 10 '**)
@@ -108,6 +110,11 @@ You can observe the results by running:
         (make-list 10 '****)
         (make-list 10 '*****)
         (make-list 10 "|")))
+
+ (code:comment "Multiple separators")
+ (print-table (for/list ((i 6)) (for/list ((j 10)) (* (+ i 1) (+ j 1))))
+              #:row-sep? '(#t #f ... ...)
+              #:col-sep? '(#t #f ... ...))
  ]
 
 @section{Tables}
@@ -117,7 +124,8 @@ You can observe the results by running:
           [#:->string to-string (pattern-list-of (any/c . -> . string)) ~a]
           [#:border-style border-style border-style/c 'single]
           [#:framed? framed? boolean? #t]
-          [#:row-sep? row-sep? boolean? #t]
+          [#:row-sep? row-sep? (pattern-list-of boolean?) #t]
+          [#:col-sep? col-sep? (pattern-list-of boolean?) #t]
           [#:align align
            (pattern-list-of (or/c 'left 'center 'right))
            'left]
@@ -137,8 +145,8 @@ You can observe the results by running:
  When @racket[framed?] is @racket[#true], a frame is drawn around the
  outside of the table.
 
- When @racket[row-sep?] is false, no separators are drawn between the
- rows.
+ The @racket[row-sep?] and @racket[col-sep?] arguments
+ specify whether separators are added between rows or columns.
 
  The @racket[align] specification indicates how the contents of the
  cells are to be aligned within their cells. A single-symbol specification
@@ -151,20 +159,23 @@ You can observe the results by running:
  The @racket[row-align] specification indicates how the contents of the cells
  are aligned in a row, when cells are strings with multiple lines.
 
- The @racket[to-string], @racket[align] and @racket[row-align] specifications
- accept pattern lists
+ The @racket[to-string], @racket[align] and @racket[row-align], @racket[row-sep?] and
+ @racket[col-sep?] arguments accept pattern lists.
 }
 
 @defproc[(simple-table->string
           [table (listof list?)]
-          [#:->string to-string procedure? ~a]
-          [#:border-style border-style border-style/c 'space]
+          [#:->string to-string (pattern-list-of (any/c . -> . string)) ~a]
+          [#:border-style border-style border-style/c 'single]
           [#:framed? framed? boolean? #f]
-          [#:row-sep? row-sep? boolean? #f]
+          [#:row-sep? row-sep? (pattern-list-of boolean?) #f]
+          [#:col-sep? col-sep? (pattern-list-of boolean?) #f]
           [#:align align
-           (or/c (listof (or/c 'left 'center 'right))
-                 (or/c 'left 'center 'right))
-           'left])
+           (pattern-list-of (or/c 'left 'center 'right))
+           'left]
+          [#:row-align row-align
+           (pattern-list-of (or/c 'top 'center 'bottom))
+           'top])
          string?]{
   Like @racket[table->string], but with different default arguments to output a minimalistic table.
 }
@@ -186,10 +197,12 @@ Shorthand form for @racket[(displayln (simple-table->string args ...))].
 Takes the same arguments as @racket[simple-table->string].
 }
 
+@; I tried this, but doesn't format well. #,@ doesn't work (because of @-reader?)
+@; #,named-border-styles
 @defthing[border-style/c contract?
           #:value
           (or/c
-           'latex 'space 'space-single 'single 'rounded 'double 'heavy
+           'empty 'latex 'space 'space-single 'single 'rounded 'double 'heavy
            border-style1/c
            border-style2/c
            border-style-frame/c
@@ -348,6 +361,7 @@ Like @racket[~r] but curried, and also accepts non-rationals,
                              (~r* #:notation 'exponential #:precision '(= 2)) (code:comment "5 (good)")
                              (~r* #:min-width 10 #:pad-string ".")) (code:comment "6")
             #:align '(right ... )
+            #:row-sep? '(#f #t #f ...)
             (cons
              '("1" "2" "3" "4 (good)" "5 (good)" "6") 
              (transpose

@@ -9,6 +9,7 @@
 
 (provide
  string-length=/c
+ (rename-out [border-styles named-border-styles])
  border-style/c
  border-style1/c
  border-style2/c
@@ -75,9 +76,11 @@
 ;; http://www.utf8-chartable.de/unicode-utf8-table.pl?start=9472&unicodeinhtml=dec
 ;; old border styles
 (define table-borders
-  (for/list ([(name frame) (in-dict table-frames)])
-    (cons name (frame->border2 frame)))
-  #;
+  (cons
+   '(empty  ("" " " "" "") ("" " " "" "") ("" " " "" "") ("" " " "" ""))
+   (for/list ([(name frame) (in-dict table-frames)])
+     (cons name (frame->border2 frame))))
+  #; ; equivalent to
   '((space         . (#\space  (" " " " " ") (" " " " " ") (" " " " " ") (" " " " " ")))
     (space-single  . (#\─      ("│" " " "│") ("┌" "─" "┐") ("├" "─" "┤") ("└" "─" "┘")))
     (single        . (#\─      ("│" "│" "│") ("┌" "┬" "┐") ("├" "┼" "┤") ("└" "┴" "┘")))
@@ -109,7 +112,7 @@
            (list bl sep bm br))]))
 
 (define border-styles
-  (cons 'latex (dict-keys table-frames #;table-borders-dict)))
+  (cons 'latex (dict-keys table-borders)))
 
 (define border-style/c
   (apply or/c
@@ -122,17 +125,21 @@
          ; default styles
          border-styles))
 
-(define (make-latex-border-style align)
-  (define (align-ref al)
-    (case al [(left) "l"] [(right) "r"] [(center) "c"]))
+(define (make-latex-border-style align framed? col-sep?s)
+  (define (align-ref al sep?)
+    (string-append (if sep? "|" "")
+                   (case al [(left) "l"] [(right) "r"] [(center) "c"])))
   (define als (string-append
-               (string-append* "\\begin{tabular}{"
-                               (map align-ref align))
-               "}"))
+               "\\begin{tabular}{"
+               (if framed? "|" "")
+               (string-append*
+                (align-ref (first align) #f)
+                (map align-ref (rest align) col-sep?s))
+               (if framed? "|}\n\\hline" "}")))
   `((,als "" "" "")
     ("" " " " & " " \\\\")
     ("\\hline" "" "" "")
-    ("\\end{tabular}" "" "" "")))
+    (,(if framed? "\\hline\n\\end{tabular}" "\\end{tabular}") "" "" "")))
 
 ;==================;
 ;=== Alignments ===;
@@ -196,12 +203,13 @@
 
 (define table->string/c
   (->* ((listof list?))
-       (#:->string (pattern-list-of (any/c . -> . string?))
-        #:border-style border-style/c
-        #:framed? boolean?
-        #:row-sep? boolean?
-        #:align (pattern-list-of (or/c 'left 'center 'right))
-        #:row-align (pattern-list-of (or/c 'top 'center 'bottom)))
+       (#:->string      (pattern-list-of (any/c . -> . string?))
+        #:border-style  border-style/c
+        #:framed?       boolean?
+        #:row-sep?      (pattern-list-of boolean?)
+        #:col-sep?      (pattern-list-of boolean?)
+        #:align         (pattern-list-of (or/c 'left 'center 'right))
+        #:row-align     (pattern-list-of (or/c 'top 'center 'bottom)))
        string?))
 
 (define-syntax-rule (print-table args ...)
@@ -210,10 +218,13 @@
 (define-syntax-rule (print-simple-table args ...)
   (displayln (simple-table->string args ...)))
 
+
+;; If only I could use `define2`… :-/
 (define (simple-table->string ll
                               #:border-style [border-style 'space]
                               #:framed?      [framed?      #false]
                               #:row-sep?     [row-sep?     #false]
+                              #:col-sep?     [col-sep?     #false]
                               #:->string     [->string     ~a]
                               #:align        [align        'left]
                               #:row-align    [row-align    'top])
@@ -229,6 +240,7 @@
                        #:border-style [border-style 'single]
                        #:framed?      [framed?      #true]
                        #:row-sep?     [row-sep?     #true]
+                       #:col-sep?     [col-sep?     #true]
                        #:->string     [->string     ~a]
                        #:align        [align        'left]
                        #:row-align    [row-align    'top])
@@ -246,13 +258,15 @@
   (unless (andmap (λ (len) (= len n-columns)) (rest lens))
     (error "All rows must have the same length"))
 
-  ;::::::::::::::::::::::::;
-  ;:: Prepare align list ::;
-  ;::::::::::::::::::::::::;
+  ;::::::::::::::::::::::::::;
+  ;:: Expand pattern lists ::;
+  ;::::::::::::::::::::::::::;
 
   (define ->string-list  (pattern-list->list ->string  n-columns))
   (define align-list     (pattern-list->list align     n-columns))
   (define row-align-list (pattern-list->list row-align n-rows))
+  (define col-sep?s      (pattern-list->list col-sep?  (- n-columns 1)))
+  (define row-sep?s      (pattern-list->list row-sep?  (- n-rows 1)))
 
   ;:::::::::::::::::::;
   ;:: Prepare style ::;
@@ -260,7 +274,11 @@
 
   (define style
     (cond [(eq? border-style 'latex)
-           (make-latex-border-style align-list)]
+           (define new-style (make-latex-border-style align-list framed? col-sep?s))
+           ; force borders
+           (set! framed? #t)
+           (set! col-sep?s (make-list (- n-columns 1) #t))
+           new-style]
           [(symbol? border-style)
            (dict-ref table-borders border-style)]
           [(border-style2/c border-style)
@@ -320,12 +338,23 @@
 
   #;(writeln ll3)
 
-  (define cell-sizes (map (λ (mcell) (string-length (first mcell)))
+  (define cell-widths (map (λ (mcell) (string-length (first mcell)))
                           (first ll3)))
   
   (define (make-row-line strs row-corners)
     (define (@ n) (list-ref row-corners n))
-    (define row-sep (@ 1))
+    (define row-sep (@ 2))
+    ; Special case for latex
+    (define no-sep (@ 1))
+    (string-append
+     (if framed? (@ 0) "")
+     (first strs)
+     (string-append*
+      (append-map (λ (str sep?) (if sep? (list row-sep str) (list no-sep str)))
+                  (rest strs)
+                  col-sep?s))
+     (if framed? (@ 3) ""))
+    #;
     (string-join strs
                  (@ 2)
                  #:before-first (if framed? (@ 0) "")
@@ -348,25 +377,31 @@
     (define row-sep-len (string-length row-sep))
     (make-row-line
      (if (= row-sep-len 0)
-       (make-list (length cell-sizes) "")
-       (for/list ([len (in-list cell-sizes)])
+       (make-list n-columns "")
+       (for/list ([len (in-list cell-widths)])
          (string-repeat row-sep len)))
-     row-corners))
+     row-corners
+     #;(string-repeat make-string (string-length pad-string) row-sep)))
+
+  (define mid-sep-line (make-sep-line mid-row-corners))
 
   ;; 4. Finally, append all the lines together, adding the frame lines if applicable.
   (string-join
    #:before-first
    (if framed?
-       (string-append (make-sep-line top-row-corners) "\n")
-       "")
+     (string-append (make-sep-line top-row-corners) "\n")
+     "")
    (if row-sep?
-       (add-between ll4 (make-sep-line mid-row-corners))
-       ll4)
+     (cons (first ll4)
+           (append-map (λ (row sep?) (if sep? (list mid-sep-line row) (list row)))
+                       (rest ll4)
+                       row-sep?s))
+     ll4)
    "\n"
    #:after-last
    (if framed?
-       (string-append "\n" (make-sep-line bottom-row-corners))
-       "")))
+     (string-append "\n" (make-sep-line bottom-row-corners))
+     "")))
 
 ;============;
 ;=== Main ===;
