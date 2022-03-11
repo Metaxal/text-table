@@ -121,7 +121,7 @@ You can observe the results by running:
 
 @defproc[(table->string
           [table (listof list?)]
-          [#:->string to-string (pattern-list-of (any/c . -> . string)) ~a]
+          [#:->string to-string (pattern-list-of (procedure-arity-includes/c 1)) ~a]
           [#:border-style border-style border-style/c 'single]
           [#:framed? framed? boolean? #t]
           [#:row-sep? row-sep? (pattern-list-of boolean?) #t]
@@ -165,7 +165,7 @@ You can observe the results by running:
 
 @defproc[(simple-table->string
           [table (listof list?)]
-          [#:->string to-string (pattern-list-of (any/c . -> . string)) ~a]
+          [#:->string to-string (pattern-list-of (procedure-arity-includes/c 1)) ~a]
           [#:border-style border-style border-style/c 'single]
           [#:framed? framed? boolean? #f]
           [#:row-sep? row-sep? (pattern-list-of boolean?) #f]

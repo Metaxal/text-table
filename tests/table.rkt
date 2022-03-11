@@ -169,3 +169,7 @@
   #:border-style
   'latex)
  "\\begin{tabular}{r|rrrrr}\n1 &  2 &  3 &  4 &  5 &  6 \\\\\n\\hline\n2 &  4 &  6 &  8 & 10 & 12 \\\\\n3 &  6 &  9 & 12 & 15 & 18 \\\\\n4 &  8 & 12 & 16 & 20 & 24 \\\\\n5 & 10 & 15 & 20 & 25 & 30 \\\\\n\\end{tabular}")
+
+
+(check-not-exn (λ () (table->string #:->string (λ _ "") '((1)))))
+

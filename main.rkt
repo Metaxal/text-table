@@ -203,7 +203,7 @@
 
 (define table->string/c
   (->* ((listof list?))
-       (#:->string      (pattern-list-of (any/c . -> . string?))
+       (#:->string      (pattern-list-of (procedure-arity-includes/c 1))
         #:border-style  border-style/c
         #:framed?       boolean?
         #:row-sep?      (pattern-list-of boolean?)
