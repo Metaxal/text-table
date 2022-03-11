@@ -166,7 +166,7 @@
            [(bottom) (append (make-list n pad) mcell)]
            [(center)
             (define h (length mcell))
-            (define ntop (quotient h 2))
+            (define ntop (quotient (- height h) 2))
             (append (make-list ntop pad) mcell (make-list (- height h ntop) pad))]
            [else (error "Unknown align-row align:" align)]))
        mrow))

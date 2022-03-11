@@ -179,3 +179,19 @@
 (check-equal?
  (table->string #:->string (list (λ (x) "a") (λ (x) "b") '... (λ (x) "c")) '((1 2 3 4)))
  "┌─┬─┬─┬─┐\n│a│b│b│c│\n└─┴─┴─┴─┘")
+
+(check-equal?
+ (table->string '(("a\nb\nc" "a" "b\nc" "d")))
+ "┌─┬─┬─┬─┐\n│a│a│b│d│\n│b│ │c│ │\n│c│ │ │ │\n└─┴─┴─┴─┘")
+
+(check-equal?
+ (table->string '(("a\nb\nc" "a" "b\nc" "d")) #:row-align 'bottom)
+ "┌─┬─┬─┬─┐\n│a│ │ │ │\n│b│ │b│ │\n│c│a│c│d│\n└─┴─┴─┴─┘")
+
+(check-equal?
+ (table->string '(("a\nb\nc" "a" "b\nc" "d")) #:row-align 'center)
+ "┌─┬─┬─┬─┐\n│a│ │b│ │\n│b│a│c│d│\n│c│ │ │ │\n└─┴─┴─┴─┘")
+
+(check-equal?
+ (table->string '(("a\nb\nc\nd" "a" "b\nc" "d")) #:row-align 'center)
+ "┌─┬─┬─┬─┐\n│a│ │ │ │\n│b│a│b│d│\n│c│ │c│ │\n│d│ │ │ │\n└─┴─┴─┴─┘")
