@@ -1,6 +1,6 @@
 #lang info
 (define collection "text-table")
-(define deps '("base" "rackunit"))
+(define deps '("base"))
 (define build-deps '("sandbox-lib"
                      "scribble-lib" "racket-doc" "rackunit-lib"))
 (define scribblings '(("scribblings/text-table.scrbl" ())))
