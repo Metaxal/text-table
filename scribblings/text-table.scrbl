@@ -244,7 +244,7 @@ and the space filler is always @racket[" "].
             #:border-style
             '(("╭" "^" "┬" "╮")
               ("{" "." "│" "}")
-              ("├" "─" "+" "┤")
+              ("├" "─" "┼" "┤")
               ("╰" "v" "┴" "╯")))]
  The element @racket["."] is a space filler.
  Note that each element can be a multi-character string rather than a single char.
