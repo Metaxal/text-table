@@ -354,7 +354,10 @@ Returns a string of length @racket[len] by repeating @racket[str].
                 (or/c #f string? (-> exact-integer? string?))
                 #f]
                [#:min-width min-width exact-positive-integer? 1]
-               [#:pad-string pad-string non-empty-string? " "])
+               [#:pad-string pad-string non-empty-string? " "]
+               [#:groups groups (non-empty-listof exact-positive-integer?) '(3)]
+               [#:group-sep group-sep string? ""]
+               [#:decimal-sep decimal-sep string? "."])
          (any/c . -> . string?)]{
 Like @racket[~r] but curried, and also accepts non-rationals,
  which are printed with @racket[~a] instead.

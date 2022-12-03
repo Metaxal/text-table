@@ -3,7 +3,8 @@
 (require racket/format
          racket/string
          racket/list
-         racket/match)
+         racket/match
+         version/utils)
 
 (provide (all-defined-out))
 
@@ -31,23 +32,42 @@
 #;(~a "" #:pad-string "abc" #:min-width 5)
 #;"bcabc"
 
-(define ((~r* #:sign [sign #f]
-              #:base [base 10]
-              #:precision [precision 6]
-              #:notation [notation 'positional]
-              #:format-exponent [format-exponent #f]
-              #:min-width [min-width 1]
-              #:pad-string [pad-string " "]) x)
-  (if (rational? x)
-    (~r x
-        #:sign sign
-        #:base base
-        #:precision precision
-        #:notation notation
-        #:format-exponent format-exponent
-        #:min-width min-width
-        #:pad-string pad-string)
-    (~a x #:min-width min-width #:pad-string pad-string)))
+(define (~r* #:sign [sign #f]
+             #:base [base 10]
+             #:precision [precision 6]
+             #:notation [notation 'positional]
+             #:format-exponent [format-exponent #f]
+             #:min-width [min-width 1]
+             #:pad-string [pad-string " "]
+             #:groups [groups '(3)]
+             #:group-sep [group-sep ""]
+             #:decimal-sep [decimal-sep "."])
+  (if (version<? (version) "8.5.0.5")
+    (λ (x)
+      (if (rational? x)
+        (~r x
+            #:sign sign
+            #:base base
+            #:precision precision
+            #:notation notation
+            #:format-exponent format-exponent
+            #:min-width min-width
+            #:pad-string pad-string)
+        (~a x #:min-width min-width #:pad-string pad-string)))
+    (λ (x)
+      (if (rational? x)
+        (~r x
+            #:sign sign
+            #:base base
+            #:precision precision
+            #:notation notation
+            #:format-exponent format-exponent
+            #:min-width min-width
+            #:pad-string pad-string
+            #:groups groups
+            #:group-sep group-sep
+            #:decimal-sep decimal-sep)
+        (~a x #:min-width min-width #:pad-string pad-string)))))
 
 ;============;
 ;=== List ===;
