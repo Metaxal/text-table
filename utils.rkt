@@ -76,7 +76,7 @@
 ;; l : (pattern-list-of any/c)
 ;; n-elts: exact-nonnegative-integer?
 ;; -> list?
-(define (pattern-list->list l n-elts)
+(define (pattern-list->list l n-elts #:truncate-ok? [truncate-ok? #f])
   (match l
     ['()
      (unless (= n-elts 0)
@@ -87,12 +87,15 @@
      (define-values (head rep) (split-at-right (cons front1 front) n-dots))
      (define-values (n-rep rem) (quotient/remainder (- n-elts (length head) (length tail))
                                                     n-dots))
-     (when (negative? rem)
-       (error "Minimum length of list l exceeds n-elt" l n-elts))
-     (flatten (list head (make-list n-rep rep) (take rep rem) tail))]
+     (cond [(and (>= n-rep 0) (>= rem 0))
+            (append head (append* (make-list n-rep rep)) (take rep rem) tail)]
+           [truncate-ok?
+            (take (append head tail) n-elts)]
+           [else
+            (error "Minimum length of list l exceeds n-elt" l n-elts)])]
     [(? list?)
      ; Repeat the last element.
-     (pattern-list->list (append l (list (last l) '...)) n-elts)]
+     (pattern-list->list (append l (list (last l) '...)) n-elts #:truncate-ok? truncate-ok?)]
     [else (make-list n-elts l)]))
 
 (define (group-by-lengths l lens)

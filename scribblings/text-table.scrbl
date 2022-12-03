@@ -86,8 +86,8 @@ You can observe the results by running:
 
  (code:comment "Aligning numbers (incorrectly then well)")
   (print-table
-   #:row-sep? '(#t #f)
-   #:col-sep? '(#t #f)
+   #:row-sep? '(#t #f ...)
+   #:col-sep? '(#t #f ...)
    #:align '(left right ... center)
    #:->string
    (list

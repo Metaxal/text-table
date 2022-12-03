@@ -262,11 +262,11 @@
   ;:: Expand pattern lists ::;
   ;::::::::::::::::::::::::::;
 
-  (define ->string-list  (pattern-list->list ->string  n-columns))
-  (define align-list     (pattern-list->list align     n-columns))
-  (define row-align-list (pattern-list->list row-align n-rows))
-  (define col-sep?s      (pattern-list->list col-sep?  (- n-columns 1)))
-  (define row-sep?s      (pattern-list->list row-sep?  (- n-rows 1)))
+  (define ->string-list  (pattern-list->list ->string  n-columns #:truncate-ok? #t))
+  (define align-list     (pattern-list->list align     n-columns #:truncate-ok? #t))
+  (define row-align-list (pattern-list->list row-align n-rows #:truncate-ok? #t))
+  (define col-sep?s      (pattern-list->list col-sep?  (- n-columns 1) #:truncate-ok? #t))
+  (define row-sep?s      (pattern-list->list row-sep?  (- n-rows 1) #:truncate-ok? #t))
 
   ;:::::::::::::::::::;
   ;:: Prepare style ::;

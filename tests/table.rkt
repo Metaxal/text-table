@@ -195,3 +195,25 @@
 (check-equal?
  (table->string '(("a\nb\nc\nd" "a" "b\nc" "d")) #:row-align 'center)
  "┌─┬─┬─┬─┐\n│a│ │ │ │\n│b│a│b│d│\n│c│ │c│ │\n│d│ │ │ │\n└─┴─┴─┴─┘")
+
+
+(check-equal?
+ (table->string #:row-sep? '(#t #f ...) '(("header") ("first row") ("second row")))
+ "┌──────────┐\n│header    │\n├──────────┤\n│first row │\n│second row│\n└──────────┘")
+
+(check-equal?
+ (table->string #:row-sep? '(#t #f ...) '(("header") ("first row")))
+ "┌─────────┐\n│header   │\n├─────────┤\n│first row│\n└─────────┘")
+
+(check-equal?
+ (table->string #:row-sep? '(#t) '(("header")))
+ "┌──────┐\n│header│\n└──────┘")
+
+(check-equal?
+ (table->string #:row-sep? '(#t #f ...) '(("header")))
+ "┌──────┐\n│header│\n└──────┘")
+
+(check-equal?
+ (table->string #:row-sep? '() '(("header")))
+ "┌──────┐\n│header│\n└──────┘")
+

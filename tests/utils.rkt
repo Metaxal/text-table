@@ -37,6 +37,19 @@
 (check-exn exn:fail? (λ () (pattern-list->list '(a b c) 2)))
 (check-equal? (pattern-list->list '() 0)
               '())
+
+(check-equal? (pattern-list->list '(a b c ...) 4 #:truncate-ok? #t)
+              '(a b c c))
+(check-equal? (pattern-list->list '(a b c ...) 3 #:truncate-ok? #t)
+              '(a b c))
+(check-equal? (pattern-list->list '(a b c ...) 2 #:truncate-ok? #t)
+              '(a b))
+(check-equal? (pattern-list->list '(a b c ...) 1 #:truncate-ok? #t)
+              '(a))
+(check-equal? (pattern-list->list '(a b c ...) 0 #:truncate-ok? #t)
+              '())
+(check-exn exn:fail? (λ () (pattern-list->list '(a b c ...) 0 #:truncate-ok? #f)))
+
   
 (check-equal? (group-by-lengths '(a b c d e f)
                                 '(1 2 3))
