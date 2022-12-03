@@ -24,6 +24,8 @@
 @defmodule[text-table]{
  A simple package to display utf-8 textual tables.}
 
+License: APACHE2+MIT
+
 To install:
 
 @verbatim{raco pkg install text-table}
