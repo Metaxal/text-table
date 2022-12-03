@@ -292,7 +292,9 @@ Returns @racket[#true] if @racket[x] is a string of length @racket[n],
  and @racket[(dots ...)] is a list of @racket['...] not longer than @racket[(head ...)].
 }
 
-@defproc[(pattern-list->list [pat (pattern-list-of any/c)] [result-length exact-nonnegative-integer?])
+@defproc[(pattern-list->list [pat (pattern-list-of any/c)]
+                             [#:truncate-ok? truncate-ok? any/c #f]
+                             [result-length exact-nonnegative-integer?])
          list?]{
 @examples[#:eval my-eval
           (pattern-list->list 'a 3)
@@ -300,7 +302,9 @@ Returns @racket[#true] if @racket[x] is a string of length @racket[n],
           (pattern-list->list '(a b) 5)
           (pattern-list->list '(a b ...) 5)
           (pattern-list->list '(a b c ... ...) 10)
-          (pattern-list->list '(a b c d ... ... ... e f) 10)]
+          (pattern-list->list '(a b c d ... ... ... e f) 10)
+          (eval:error (pattern-list->list '(a b c d ... ... ... e f) 2))
+          (pattern-list->list '(a b c d ... ... ... e f) 2 #:truncate-ok? #t)]
 }
 
 @defproc[(transpose [l (listof list?)]) (listof list?)]{
