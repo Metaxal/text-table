@@ -189,12 +189,38 @@ You can observe the results by running:
               (123 456 77 54 1  5646547987 41 1)
               (111 22 3333 44 5 6 7 8888))))]
 
-@defform[(print-table args ...)]{
+@defproc[(print-table
+          [table (listof list?)]
+          [#:->string to-string (pattern-list-of (procedure-arity-includes/c 1)) ~a]
+          [#:border-style border-style border-style/c 'single]
+          [#:framed? framed? boolean? #t]
+          [#:row-sep? row-sep? (pattern-list-of boolean?) #t]
+          [#:col-sep? col-sep? (pattern-list-of boolean?) #t]
+          [#:align align
+           (pattern-list-of (or/c 'left 'center 'right))
+           'left]
+          [#:row-align row-align
+           (pattern-list-of (or/c 'top 'center 'bottom))
+           'top])
+         void?]{
 Shorthand form for @racket[(displayln (table->string args ...))].
 Takes the same arguments as @racket[table->string].
 }
 
-@defform[(print-simple-table args ...)]{
+@defproc[(print-simple-table
+          [table (listof list?)]
+          [#:->string to-string (pattern-list-of (procedure-arity-includes/c 1)) ~a]
+          [#:border-style border-style border-style/c 'single]
+          [#:framed? framed? boolean? #f]
+          [#:row-sep? row-sep? (pattern-list-of boolean?) #f]
+          [#:col-sep? col-sep? (pattern-list-of boolean?) #f]
+          [#:align align
+           (pattern-list-of (or/c 'left 'center 'right))
+           'left]
+          [#:row-align row-align
+           (pattern-list-of (or/c 'top 'center 'bottom))
+           'top])
+         void?]{
 Shorthand form for @racket[(displayln (simple-table->string args ...))].
 Takes the same arguments as @racket[simple-table->string].
 }

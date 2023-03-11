@@ -212,11 +212,15 @@
         #:row-align     (pattern-list-of (or/c 'top 'center 'bottom)))
        string?))
 
-(define-syntax-rule (print-table args ...)
-  (displayln (table->string args ...)))
+(define print-table
+  (make-keyword-procedure
+   (λ (kws kw-args . rst)
+     (displayln (keyword-apply table->string  kws kw-args rst)))))
 
-(define-syntax-rule (print-simple-table args ...)
-  (displayln (simple-table->string args ...)))
+(define print-simple-table
+  (make-keyword-procedure
+   (λ (kws kw-args . rst)
+     (displayln (keyword-apply simple-table->string  kws kw-args rst)))))
 
 
 ;; If only I could use `define2`… :-/
