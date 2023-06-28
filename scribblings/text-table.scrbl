@@ -139,7 +139,8 @@ You can observe the results by running:
  representing the table. The lists must all be of the same lengths.
 
  The @racket[to-string] procedure is used to convert cell values to
- strings, or a pattern-list of such procedures.
+ strings, or a pattern-list of such procedures. Note that strings are 
+ not converted.
 
  The @racket[border-style] specifies the style of lines to be used
  in drawing the table.
